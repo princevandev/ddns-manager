@@ -38,6 +38,11 @@
   <style>
     body { font-family: 'Fira Sans', sans-serif; }
     .font-mono { font-family: 'Fira Code', monospace; }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
   </style>
 </head>
 <body class="bg-surface-900 text-slate-100 min-h-screen">
@@ -58,13 +63,6 @@
           </svg>
           <span class="font-medium">域名</span>
         </a>
-        <a href="/settings" class="flex items-center gap-2 py-2 px-4 text-slate-400 hover:text-slate-200 hover:bg-surface-700 rounded-xl transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-          <span class="font-medium">设置</span>
-        </a>
       </div>
       <!-- User Avatar with Dropdown -->
       <div class="relative group">
@@ -76,6 +74,13 @@
             <div class="text-sm font-medium">admin</div>
             <div class="text-xs text-slate-500">管理员</div>
           </div>
+          <a href="/settings" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            设置
+          </a>
           <a href="/logout" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-b-xl">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -89,27 +94,106 @@
 
   <div class="max-w-6xl mx-auto px-4 py-6" id="app">
 
-    <!-- Add Machine Card -->
-    <div class="bg-surface-800 border border-surface-700 rounded-2xl p-5 mb-6">
-      <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
-        <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <!-- Total Machines -->
+      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center">
+            <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold">{{ machines.length }}</div>
+            <div class="text-xs text-slate-500">机器总数</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Online Machines -->
+      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-success/10 flex items-center justify-center">
+            <div class="w-3 h-3 rounded-full bg-brand-success animate-pulse-slow"></div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-brand-success">{{ onlineCount }}</div>
+            <div class="text-xs text-slate-500">在线</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Domains -->
+      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold">{{ totalDomains }}</div>
+            <div class="text-xs text-slate-500">域名总数</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync Status -->
+      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+        <div class="flex items-center gap-3">
+          <div :class="syncedDomains === totalDomains ? 'bg-brand-success/10' : 'bg-yellow-500/10'" class="w-10 h-10 rounded-xl flex items-center justify-center">
+            <svg v-if="syncedDomains === totalDomains" class="w-5 h-5 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <svg v-else class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold">{{ syncedDomains }}/{{ totalDomains }}</div>
+            <div class="text-xs text-slate-500">已同步</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Machine Button -->
+    <div class="mb-6">
+      <button @click="showAddModal = true" class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
         添加机器
-      </h2>
-      <form @submit.prevent="createMachine" class="flex flex-col sm:flex-row gap-3">
-        <input 
-          v-model="newMachine" 
-          class="flex-1 bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
-          placeholder="输入机器名称，如: server-01"
-        />
-        <button class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      </button>
+    </div>
+
+    <!-- Add Machine Modal -->
+    <div v-if="showAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAddModal = false">
+      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-6 w-full max-w-md mx-4">
+        <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
           </svg>
-          创建
-        </button>
-      </form>
+          添加机器
+        </h2>
+        <form @submit.prevent="createMachine" class="space-y-4">
+          <input 
+            v-model="newMachine" 
+            class="w-full bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+            placeholder="输入机器名称，如: server-01"
+            autofocus
+          />
+          <div class="flex gap-3">
+            <button type="button" @click="showAddModal = false; newMachine = ''" class="flex-1 bg-surface-700 hover:bg-surface-600 text-slate-300 font-medium px-4 py-3 rounded-xl transition-colors">
+              取消
+            </button>
+            <button type="submit" class="flex-1 bg-brand-primary hover:bg-brand-secondary text-white font-medium px-4 py-3 rounded-xl transition-colors">
+              创建
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Machines Grid -->
@@ -127,14 +211,24 @@
       <div v-for="machine in machines" :key="machine.id" class="bg-surface-800 border border-surface-700 rounded-2xl p-5 hover:border-surface-600 transition-colors">
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-brand-success/10 flex items-center justify-center">
-              <svg class="w-5 h-5 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
-              </svg>
+            <!-- Status Indicator -->
+            <div class="relative">
+              <div :class="getStatusColor(machine)" class="w-10 h-10 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                </svg>
+              </div>
+              <!-- Status dot -->
+              <div :class="[getStatusDotColor(machine), isOnline(machine) ? 'animate-pulse-slow' : '']" class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-surface-800"></div>
             </div>
             <div>
-              <h3 class="font-semibold text-lg">{{ machine.name }}</h3>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-2">
+                <h3 class="font-semibold text-lg">{{ machine.name }}</h3>
+                <span :class="getStatusTextClass(machine)" class="text-xs px-2 py-0.5 rounded-full">
+                  {{ getStatusText(machine) }}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 mt-1">
                 <span class="text-slate-500 text-sm font-mono">{{ showToken[machine.id] ? machine.token : '••••••••••••••••••••••••••••••••' }}</span>
                 <button @click="toggleToken(machine.id)" class="text-slate-500 hover:text-slate-300 p-1 transition-colors">
                   <svg v-if="showToken[machine.id]" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,10 +250,10 @@
           <div class="text-right">
             <div class="text-xs text-slate-500 mb-1">上次 IP</div>
             <div v-if="machine.last_ip" class="font-mono text-sm text-brand-success bg-brand-success/10 px-2 py-1 rounded-lg">
-              {{ machine.last_ip.substring(0, 25) }}...
+              {{ machine.last_ip.length > 25 ? machine.last_ip.substring(0, 25) + '...' : machine.last_ip }}
             </div>
             <div v-else class="text-sm text-slate-500">未上报</div>
-            <div v-if="machine.last_reported" class="text-xs text-slate-600 mt-1">{{ machine.last_reported }}</div>
+            <div v-if="machine.last_reported" class="text-xs text-slate-600 mt-1">{{ formatTime(machine.last_reported) }}</div>
           </div>
         </div>
 
@@ -173,9 +267,18 @@
           </div>
           <div v-if="machine.domains.length > 0" class="space-y-2">
             <div v-for="domain in machine.domains" :key="domain.id" class="flex items-center justify-between bg-surface-700/50 rounded-lg px-3 py-2">
-              <span class="font-mono text-sm">{{ domain.domain_name }}</span>
-              <span v-if="domain.last_ip" class="text-xs text-brand-success">{{ domain.last_ip.substring(0, 15) }}...</span>
-              <span v-else class="text-xs text-slate-500">未更新</span>
+              <div class="flex items-center gap-2">
+                <!-- Domain sync status -->
+                <div :class="getDomainStatusColor(domain, machine)" class="w-2 h-2 rounded-full"></div>
+                <span class="font-mono text-sm">{{ domain.domain_name }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span v-if="domain.last_ip" class="text-xs text-brand-success font-mono">{{ domain.last_ip.length > 15 ? domain.last_ip.substring(0, 15) + '...' : domain.last_ip }}</span>
+                <span v-else class="text-xs text-slate-500">未更新</span>
+                <!-- Sync status indicator -->
+                <span v-if="getDomainSyncStatus(domain, machine) === 'synced'" class="text-xs text-brand-success">✓</span>
+                <span v-else-if="getDomainSyncStatus(domain, machine) === 'pending'" class="text-xs text-yellow-500">⚠</span>
+              </div>
             </div>
           </div>
           <div v-else class="text-sm text-slate-500 bg-surface-700/50 rounded-lg px-3 py-2">
@@ -211,7 +314,7 @@
     </div>
 
     <!-- Toast -->
-    <div v-if="message" class="fixed bottom-6 right-6 bg-surface-700 border border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+    <div v-if="message" class="fixed top-20 left-1/2 -translate-x-1/2 bg-surface-700 border border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
       <svg class="w-4 h-4 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
       </svg>
@@ -228,7 +331,21 @@
           machines: [],
           newMachine: '',
           message: '',
-          showToken: {}
+          showToken: {},
+          showAddModal: false
+        }
+      },
+      computed: {
+        onlineCount() {
+          return this.machines.filter(m => this.isOnline(m)).length
+        },
+        totalDomains() {
+          return this.machines.reduce((sum, m) => sum + m.domains.length, 0)
+        },
+        syncedDomains() {
+          return this.machines.reduce((sum, m) => {
+            return sum + m.domains.filter(d => this.getDomainSyncStatus(d, m) === 'synced').length
+          }, 0)
         }
       },
       mounted() {
@@ -246,6 +363,7 @@
           const res = await fetch('/api/machines', { method: 'POST', body: form })
           if (res.ok) {
             this.newMachine = ''
+            this.showAddModal = false
             this.message = '机器创建成功'
             await this.loadMachines()
             setTimeout(() => this.message = '', 3000)
@@ -284,6 +402,69 @@
           navigator.clipboard.writeText(token)
           this.message = 'Token 已复制'
           setTimeout(() => this.message = '', 2000)
+        },
+        // Status helpers
+        isOnline(machine) {
+          if (!machine.last_reported) return false
+          const lastReport = new Date(machine.last_reported)
+          const now = new Date()
+          const diffSeconds = (now - lastReport) / 1000
+          // 使用机器的上报间隔 * 2 作为在线阈值，给一点容错空间
+          const threshold = (machine.report_interval || 3600) * 2
+          return diffSeconds <= threshold
+        },
+        getStatus(machine) {
+          return this.isOnline(machine) ? 'online' : 'offline'
+        },
+        getStatusColor(machine) {
+          const status = this.getStatus(machine)
+          return {
+            'bg-brand-success/10 text-brand-success': status === 'online',
+            'bg-slate-600/10 text-slate-500': status === 'offline'
+          }
+        },
+        getStatusDotColor(machine) {
+          const status = this.getStatus(machine)
+          return {
+            'bg-brand-success': status === 'online',
+            'bg-slate-600': status === 'offline'
+          }
+        },
+        getStatusText(machine) {
+          return this.isOnline(machine) ? '在线' : '离线'
+        },
+        getStatusTextClass(machine) {
+          const status = this.getStatus(machine)
+          return {
+            'bg-brand-success/10 text-brand-success': status === 'online',
+            'bg-slate-600/10 text-slate-500': status === 'offline'
+          }
+        },
+        getDomainSyncStatus(domain, machine) {
+          if (!domain.last_ip) return 'pending'
+          if (domain.last_ip === machine.last_ip) return 'synced'
+          return 'pending'
+        },
+        getDomainStatusColor(domain, machine) {
+          const status = this.getDomainSyncStatus(domain, machine)
+          return {
+            'bg-brand-success': status === 'synced',
+            'bg-yellow-500': status === 'pending'
+          }
+        },
+        formatTime(isoString) {
+          const date = new Date(isoString)
+          const now = new Date()
+          const diffMinutes = Math.floor((now - date) / 1000 / 60)
+          
+          if (diffMinutes < 1) return '刚刚'
+          if (diffMinutes < 60) return `${diffMinutes} 分钟前`
+          
+          const diffHours = Math.floor(diffMinutes / 60)
+          if (diffHours < 24) return `${diffHours} 小时前`
+          
+          const diffDays = Math.floor(diffHours / 24)
+          return `${diffDays} 天前`
         }
       }
     }).mount('#app')

@@ -58,13 +58,6 @@
           </svg>
           <span class="font-medium">域名</span>
         </a>
-        <a href="/settings" class="flex items-center gap-2 py-2 px-4 text-slate-400 hover:text-slate-200 hover:bg-surface-700 rounded-xl transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-          <span class="font-medium">设置</span>
-        </a>
       </div>
       <!-- User Avatar with Dropdown -->
       <div class="relative group">
@@ -76,6 +69,13 @@
             <div class="text-sm font-medium">admin</div>
             <div class="text-xs text-slate-500">管理员</div>
           </div>
+          <a href="/settings" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            设置
+          </a>
           <a href="/logout" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-b-xl">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -88,33 +88,50 @@
   </nav>
 
   <div class="max-w-4xl mx-auto px-4 py-6" id="app">
-    <!-- Add Domain -->
-    <div class="bg-surface-800 border border-surface-700 rounded-2xl p-5 mb-6">
-      <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
-        <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Add Domain Button -->
+    <div class="mb-6">
+      <button @click="showAddModal = true" class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
         添加域名
-      </h2>
-      <form @submit.prevent="addDomain" class="grid sm:grid-cols-4 gap-3">
-        <select v-model="machineId" class="bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-brand-primary transition-colors">
-          <option disabled value="">选择机器</option>
-          <option v-for="m in machines" :value="m.id">{{ m.name }}</option>
-        </select>
-        <input 
-          v-model="domain" 
-          class="bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
-          placeholder="example.com"
-        />
-        <input 
-          v-model="zoneId" 
-          class="bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
-          placeholder="Zone ID (可选)"
-        />
-        <button class="bg-brand-primary hover:bg-brand-secondary text-white font-medium rounded-xl transition-colors duration-200">
-          添加
-        </button>
-      </form>
+      </button>
+    </div>
+
+    <!-- Add Domain Modal -->
+    <div v-if="showAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAddModal = false">
+      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-6 w-full max-w-md mx-4">
+        <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          添加域名
+        </h2>
+        <form @submit.prevent="addDomain" class="space-y-4">
+          <select v-model="machineId" class="w-full bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-brand-primary transition-colors">
+            <option disabled value="">选择机器</option>
+            <option v-for="m in machines" :value="m.id">{{ m.name }}</option>
+          </select>
+          <input 
+            v-model="domain" 
+            class="w-full bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
+            placeholder="example.com"
+          />
+          <input 
+            v-model="zoneId" 
+            class="w-full bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary transition-colors"
+            placeholder="Zone ID (可选)"
+          />
+          <div class="flex gap-3">
+            <button type="button" @click="showAddModal = false; machineId = ''; domain = ''; zoneId = ''" class="flex-1 bg-surface-700 hover:bg-surface-600 text-slate-300 font-medium px-4 py-3 rounded-xl transition-colors">
+              取消
+            </button>
+            <button type="submit" class="flex-1 bg-brand-primary hover:bg-brand-secondary text-white font-medium px-4 py-3 rounded-xl transition-colors">
+              添加
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Domains List -->
@@ -154,7 +171,7 @@
     </div>
 
     <!-- Toast -->
-    <div v-if="message" class="fixed bottom-6 right-6 bg-surface-700 border border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+    <div v-if="message" class="fixed top-20 left-1/2 -translate-x-1/2 bg-surface-700 border border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
       <svg class="w-4 h-4 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
       </svg>
@@ -173,7 +190,8 @@
           machineId: '',
           domain: '',
           zoneId: '',
-          message: ''
+          message: '',
+          showAddModal: false
         }
       },
       mounted() {
@@ -199,8 +217,10 @@
           }
           const res = await fetch('/api/domains', { method: 'POST', body: form })
           if (res.ok) {
+            this.machineId = ''
             this.domain = ''
             this.zoneId = ''
+            this.showAddModal = false
             this.message = '域名添加成功'
             await this.loadDomains()
             setTimeout(() => this.message = '', 3000)

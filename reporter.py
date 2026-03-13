@@ -55,9 +55,9 @@ def get_ipv6_address(interface_name: str) -> str:
     return candidates[0]
 
 
-def report(manager_url: str, token: str, ip: str) -> None:
+def report(manager_url: str, token: str, ip: str, interval: int) -> None:
     url = manager_url.rstrip("/") + "/api/report"
-    resp = requests.post(url, json={"token": token, "ip": ip}, timeout=10)
+    resp = requests.post(url, json={"token": token, "ip": ip, "report_interval": interval}, timeout=10)
     if resp.status_code != 200:
         raise RuntimeError(f"Report failed: {resp.status_code} {resp.text}")
 
@@ -75,7 +75,7 @@ def main() -> None:
     while True:
         try:
             ip = get_ipv6_address(config["interface_name"])
-            report(config["manager_url"], config["machine_token"], ip)
+            report(config["manager_url"], config["machine_token"], ip, interval)
             print(f"Reported IP: {ip}")
             backoff = 5
             time.sleep(interval)

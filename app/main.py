@@ -22,6 +22,10 @@ app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
+def utc_iso(dt: datetime) -> str:
+    """返回带 Z 后缀的 UTC ISO 时间字符串"""
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
 
 @app.on_event("startup")
 def on_startup() -> None:
@@ -104,9 +108,9 @@ def api_list_machines(request: Request, db: Session = Depends(get_db)):
                 "name": machine.name,
                 "token": machine.token,
                 "report_interval": machine.report_interval,
-                "created_at": machine.created_at.isoformat(),
+                "created_at": utc_iso(machine.created_at),
                 "last_ip": last_report.ip if last_report else None,
-                "last_reported": last_report.reported_at.isoformat() if last_report else None,
+                "last_reported": utc_iso(last_report.reported_at) if last_report else None,
                 "domains": [
                     {
                         "id": d.id,
@@ -114,7 +118,7 @@ def api_list_machines(request: Request, db: Session = Depends(get_db)):
                         "zone_id": d.zone_id,
                         "record_id": d.record_id,
                         "last_ip": d.last_ip,
-                        "last_updated": d.last_updated.isoformat() if d.last_updated else None,
+                        "last_updated": utc_iso(d.last_updated) if d.last_updated else None,
                         "enabled": d.enabled,
                     }
                     for d in machine.domains
@@ -135,7 +139,7 @@ def api_get_machine(request: Request, machine_id: int, db: Session = Depends(get
         "name": machine.name,
         "token": machine.token,
         "report_interval": machine.report_interval,
-        "created_at": machine.created_at.isoformat(),
+        "created_at": utc_iso(machine.created_at),
         "domains": [
             {
                 "id": d.id,
@@ -143,7 +147,7 @@ def api_get_machine(request: Request, machine_id: int, db: Session = Depends(get
                 "zone_id": d.zone_id,
                 "record_id": d.record_id,
                 "last_ip": d.last_ip,
-                "last_updated": d.last_updated.isoformat() if d.last_updated else None,
+                "last_updated": utc_iso(d.last_updated) if d.last_updated else None,
                 "enabled": d.enabled,
             }
             for d in machine.domains
@@ -164,7 +168,7 @@ def api_machine_history(request: Request, machine_id: int, db: Session = Depends
     return [
         {
             "ip": item.ip,
-            "reported_at": item.reported_at.isoformat(),
+            "reported_at": utc_iso(item.reported_at),
         }
         for item in history
     ]
@@ -182,7 +186,7 @@ def api_create_machine(request: Request, db: Session = Depends(get_db), name: st
         "id": machine.id,
         "name": machine.name,
         "token": machine.token,
-        "created_at": machine.created_at.isoformat(),
+        "created_at": utc_iso(machine.created_at),
     }
 
 
@@ -253,7 +257,7 @@ def api_list_domains(request: Request, db: Session = Depends(get_db)):
             "zone_id": d.zone_id,
             "record_id": d.record_id,
             "last_ip": d.last_ip,
-            "last_updated": d.last_updated.isoformat() if d.last_updated else None,
+            "last_updated": utc_iso(d.last_updated) if d.last_updated else None,
             "enabled": d.enabled,
         }
         for d in domains
@@ -356,12 +360,17 @@ async def api_report(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     token = data.get("token")
     ip = data.get("ip")
+    report_interval = data.get("report_interval")  # 上报端主动上报的间隔
     if not token or not ip:
         raise HTTPException(status_code=400, detail="token and ip required")
 
     machine = db.query(Machine).filter(Machine.token == token).first()
     if not machine:
         raise HTTPException(status_code=401, detail="invalid token")
+
+    # 更新上报间隔（如果上报端提供了）
+    if report_interval and isinstance(report_interval, int) and report_interval > 0:
+        machine.report_interval = report_interval
 
     db.add(IPHistory(machine_id=machine.id, ip=ip))
     db.commit()
