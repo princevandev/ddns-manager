@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    // Theme initialization (prevent flash)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.classList.toggle('light', theme === 'light');
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,6 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
@@ -22,6 +30,10 @@
               800: '#12121a',
               700: '#1a1a24',
               600: '#22222e',
+              100: '#f8fafc',
+              200: '#f1f5f9',
+              300: '#e2e8f0',
+              400: '#cbd5e1',
             },
             brand: {
               primary: '#2563eb',
@@ -45,10 +57,10 @@
     .animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
   </style>
 </head>
-<body class="bg-surface-900 text-slate-100 min-h-screen">
+<body class="bg-surface-100 dark:bg-surface-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300">
   {% raw %}
   <!-- Top Tab Bar -->
-  <nav class="bg-surface-800 border-b border-surface-700 px-4 py-3 sticky top-0 z-50">
+  <nav class="bg-surface-200 dark:bg-surface-800 border-b border-surface-300 dark:border-surface-700 px-4 py-3 sticky top-0 z-50">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-1">
         <a href="/" class="flex items-center gap-2 py-2 px-4 text-brand-primary bg-brand-primary/10 rounded-xl">
@@ -57,7 +69,7 @@
           </svg>
           <span class="font-medium">机器</span>
         </a>
-        <a href="/domains" class="flex items-center gap-2 py-2 px-4 text-slate-400 hover:text-slate-200 hover:bg-surface-700 rounded-xl transition-colors">
+        <a href="/domains" class="flex items-center gap-2 py-2 px-4 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-surface-300 dark:hover:bg-surface-700 rounded-xl transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
           </svg>
@@ -69,19 +81,29 @@
         <button class="w-9 h-9 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary font-semibold hover:bg-brand-primary/30 transition-colors">
           A
         </button>
-        <div class="absolute right-0 top-full mt-2 w-48 bg-surface-800 border border-surface-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-          <div class="px-4 py-3 border-b border-surface-700">
+        <div class="absolute right-0 top-full mt-2 w-48 bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+          <div class="px-4 py-3 border-b border-surface-300 dark:border-surface-700">
             <div class="text-sm font-medium">admin</div>
             <div class="text-xs text-slate-500">管理员</div>
           </div>
-          <a href="/settings" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface-700 transition-colors">
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="w-full flex items-center gap-2 px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-surface-300 dark:hover:bg-surface-700 transition-colors">
+            <svg id="theme-icon-dark" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <svg id="theme-icon-light" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span id="theme-text">明亮模式</span>
+          </button>
+          <a href="/settings" class="flex items-center gap-2 px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-surface-300 dark:hover:bg-surface-700 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             设置
           </a>
-          <a href="/logout" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-b-xl">
+          <a href="/logout" class="flex items-center gap-2 px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-b-xl">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
             </svg>
@@ -97,7 +119,7 @@
     <!-- Stats Overview -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <!-- Total Machines -->
-      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+      <div class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center">
             <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +134,7 @@
       </div>
 
       <!-- Online Machines -->
-      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+      <div class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-brand-success/10 flex items-center justify-center">
             <div class="w-3 h-3 rounded-full bg-brand-success animate-pulse-slow"></div>
@@ -125,7 +147,7 @@
       </div>
 
       <!-- Total Domains -->
-      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+      <div class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
             <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +162,7 @@
       </div>
 
       <!-- Sync Status -->
-      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-4">
+      <div class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-4">
         <div class="flex items-center gap-3">
           <div :class="syncedDomains === totalDomains ? 'bg-brand-success/10' : 'bg-yellow-500/10'" class="w-10 h-10 rounded-xl flex items-center justify-center">
             <svg v-if="syncedDomains === totalDomains" class="w-5 h-5 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,18 +181,24 @@
     </div>
 
     <!-- Add Machine Button -->
-    <div class="mb-6">
+    <div class="mb-6 flex gap-3">
       <button @click="showAddModal = true" class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200 flex items-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
         添加机器
       </button>
+      <button v-if="machines.length > 0" @click="syncAll" :disabled="syncingAll" class="bg-brand-success/10 hover:bg-brand-success/20 text-brand-success font-medium px-6 py-3 rounded-xl transition-colors duration-200 flex items-center gap-2 disabled:opacity-50">
+        <svg :class="{ 'animate-spin': syncingAll }" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        {{ syncingAll ? '同步中...' : '一键同步' }}
+      </button>
     </div>
 
     <!-- Add Machine Modal -->
     <div v-if="showAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAddModal = false">
-      <div class="bg-surface-800 border border-surface-700 rounded-2xl p-6 w-full max-w-md mx-4">
+      <div class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-6 w-full max-w-md mx-4">
         <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
           <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -180,12 +208,12 @@
         <form @submit.prevent="createMachine" class="space-y-4">
           <input 
             v-model="newMachine" 
-            class="w-full bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+            class="w-full bg-surface-200 dark:bg-surface-700 border border-surface-400 dark:border-surface-600 rounded-xl p-3 text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
             placeholder="输入机器名称，如: server-01"
             autofocus
           />
           <div class="flex gap-3">
-            <button type="button" @click="showAddModal = false; newMachine = ''" class="flex-1 bg-surface-700 hover:bg-surface-600 text-slate-300 font-medium px-4 py-3 rounded-xl transition-colors">
+            <button type="button" @click="showAddModal = false; newMachine = ''" class="flex-1 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 text-slate-700 dark:text-slate-300 font-medium px-4 py-3 rounded-xl transition-colors">
               取消
             </button>
             <button type="submit" class="flex-1 bg-brand-primary hover:bg-brand-secondary text-white font-medium px-4 py-3 rounded-xl transition-colors">
@@ -197,18 +225,18 @@
     </div>
 
     <!-- Machines Grid -->
-    <div v-if="machines.length === 0" class="bg-surface-800 border border-surface-700 rounded-2xl p-12 text-center">
-      <div class="w-16 h-16 rounded-2xl bg-surface-700 flex items-center justify-center mx-auto mb-4">
+    <div v-if="machines.length === 0" class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-12 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-surface-200 dark:bg-surface-700 flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
       </div>
-      <h3 class="text-lg font-medium text-slate-300 mb-2">暂无机器</h3>
+      <h3 class="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">暂无机器</h3>
       <p class="text-slate-500 text-sm">创建第一台机器开始使用 DDNS</p>
     </div>
 
     <div v-else class="grid gap-4">
-      <div v-for="machine in machines" :key="machine.id" class="bg-surface-800 border border-surface-700 rounded-2xl p-5 hover:border-surface-600 transition-colors">
+      <div v-for="machine in machines" :key="machine.id" class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-5 hover:border-surface-600 dark:hover:border-surface-600 hover:border-surface-400 transition-colors">
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
             <!-- Status Indicator -->
@@ -219,7 +247,7 @@
                 </svg>
               </div>
               <!-- Status dot -->
-              <div :class="[getStatusDotColor(machine), isOnline(machine) ? 'animate-pulse-slow' : '']" class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-surface-800"></div>
+              <div :class="[getStatusDotColor(machine), isOnline(machine) ? 'animate-pulse-slow' : '']" class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-surface-800 dark:border-surface-800 border-surface-100"></div>
             </div>
             <div>
               <div class="flex items-center gap-2">
@@ -230,7 +258,7 @@
               </div>
               <div class="flex items-center gap-1 mt-1">
                 <span class="text-slate-500 text-sm font-mono">{{ showToken[machine.id] ? machine.token : '••••••••••••••••••••••••••••••••' }}</span>
-                <button @click="toggleToken(machine.id)" class="text-slate-500 hover:text-slate-300 p-1 transition-colors">
+                <button @click="toggleToken(machine.id)" class="text-slate-500 hover:text-slate-300 dark:hover:text-slate-300 hover:text-slate-700 p-1 transition-colors">
                   <svg v-if="showToken[machine.id]" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
                   </svg>
@@ -239,7 +267,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                   </svg>
                 </button>
-                <button @click="copyToken(machine.token)" class="text-slate-500 hover:text-slate-300 p-1 transition-colors">
+                <button @click="copyToken(machine.token)" class="text-slate-500 hover:text-slate-300 dark:hover:text-slate-300 hover:text-slate-700 p-1 transition-colors">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                   </svg>
@@ -258,7 +286,7 @@
         </div>
 
         <!-- Domains -->
-        <div class="border-t border-surface-700 pt-4">
+        <div class="border-t border-surface-300 dark:border-surface-700 pt-4">
           <div class="text-xs text-slate-500 mb-2 flex items-center gap-1">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
@@ -266,7 +294,7 @@
             绑定域名
           </div>
           <div v-if="machine.domains.length > 0" class="space-y-2">
-            <div v-for="domain in machine.domains" :key="domain.id" class="flex items-center justify-between bg-surface-700/50 rounded-lg px-3 py-2">
+            <div v-for="domain in machine.domains" :key="domain.id" class="flex items-center justify-between bg-surface-200 dark:bg-surface-700/50 rounded-lg px-3 py-2">
               <div class="flex items-center gap-2">
                 <!-- Domain sync status -->
                 <div :class="getDomainStatusColor(domain, machine)" class="w-2 h-2 rounded-full"></div>
@@ -281,19 +309,19 @@
               </div>
             </div>
           </div>
-          <div v-else class="text-sm text-slate-500 bg-surface-700/50 rounded-lg px-3 py-2">
+          <div v-else class="text-sm text-slate-500 bg-surface-200 dark:bg-surface-700/50 rounded-lg px-3 py-2">
             暂无绑定域名
           </div>
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center justify-between mt-4 pt-4 border-t border-surface-700">
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-surface-300 dark:border-surface-700">
           <div class="flex items-center gap-3">
-            <button @click="syncDNS(machine.id)" class="text-brand-success hover:text-green-300 text-sm font-medium flex items-center gap-1 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button @click="syncDNS(machine.id)" :disabled="syncing[machine.id]" class="text-brand-success hover:text-green-300 text-sm font-medium flex items-center gap-1 transition-colors disabled:opacity-50">
+              <svg :class="{ 'animate-spin': syncing[machine.id] }" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
-              同步
+              {{ syncing[machine.id] ? '同步中' : '同步' }}
             </button>
             <a :href="'/machines/' + machine.id" class="text-brand-primary hover:text-brand-secondary text-sm font-medium flex items-center gap-1 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,7 +342,7 @@
     </div>
 
     <!-- Toast -->
-    <div v-if="message" class="fixed top-20 left-1/2 -translate-x-1/2 bg-surface-700 border border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+    <div v-if="message" class="fixed top-20 left-1/2 -translate-x-1/2 bg-surface-200 dark:bg-surface-700 border border-surface-400 dark:border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
       <svg class="w-4 h-4 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
       </svg>
@@ -323,6 +351,41 @@
   </div>
 
   <script>
+    // Theme toggle
+    const html = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIconDark = document.getElementById('theme-icon-dark');
+    const themeIconLight = document.getElementById('theme-icon-light');
+    const themeText = document.getElementById('theme-text');
+
+    function updateThemeUI(theme) {
+      if (theme === 'light') {
+        html.classList.add('light');
+        html.classList.remove('dark');
+        themeIconDark.classList.remove('hidden');
+        themeIconLight.classList.add('hidden');
+        themeText.textContent = '深色模式';
+      } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        themeIconDark.classList.add('hidden');
+        themeIconLight.classList.remove('hidden');
+        themeText.textContent = '明亮模式';
+      }
+    }
+
+    // Initialize theme UI
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    updateThemeUI(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = localStorage.getItem('theme') || 'dark';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', newTheme);
+      updateThemeUI(newTheme);
+    });
+
+    // Vue app
     const { createApp } = Vue
 
     createApp({
@@ -332,7 +395,9 @@
           newMachine: '',
           message: '',
           showToken: {},
-          showAddModal: false
+          showAddModal: false,
+          syncing: {},
+          syncingAll: false
         }
       },
       computed: {
@@ -379,8 +444,9 @@
           }
         },
         async syncDNS(id) {
-          this.message = '正在同步...'
+          this.syncing[id] = true
           const res = await fetch(`/api/sync/${id}`, { method: 'POST' })
+          this.syncing[id] = false
           if (res.ok) {
             const data = await res.json()
             if (data.status === 'ok') {
@@ -393,6 +459,32 @@
             const data = await res.json()
             this.message = data.detail || '同步失败'
           }
+          setTimeout(() => this.message = '', 3000)
+        },
+        async syncAll() {
+          this.syncingAll = true
+          // 先设置所有机器为同步中状态
+          for (const machine of this.machines) {
+            this.syncing[machine.id] = true
+          }
+          // 并行发起所有同步请求
+          const promises = this.machines.map(async (machine) => {
+            try {
+              const res = await fetch(`/api/sync/${machine.id}`, { method: 'POST' })
+              return { id: machine.id, success: res.ok }
+            } catch (e) {
+              return { id: machine.id, success: false }
+            }
+          })
+          const results = await Promise.all(promises)
+          // 更新状态
+          for (const result of results) {
+            this.syncing[result.id] = false
+          }
+          this.syncingAll = false
+          const successCount = results.filter(r => r.success).length
+          this.message = `同步完成: ${successCount}/${results.length}`
+          await this.loadMachines()
           setTimeout(() => this.message = '', 3000)
         },
         toggleToken(id) {

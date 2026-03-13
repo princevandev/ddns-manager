@@ -2,6 +2,46 @@
 
 Personal DDNS management system with a FastAPI manager and a single-file Python reporter.
 
+## 快速开始
+
+一行命令部署 Manager 和 Reporter：
+
+### 1. 启动管理端
+
+```bash
+docker run -d \
+  --name ddns-manager \
+  -p 8765:8000 \
+  -v ddns-data:/data \
+  -e DDNS_ADMIN_USERNAME=admin \
+  -e DDNS_ADMIN_PASSWORD=yourpassword \
+  princevan/ddns-manager:v0.0.1
+```
+
+访问 `http://your-ip:8765`，登录后创建机器获取 Token。
+
+### 2. 启动上报端
+
+```bash
+docker run -d \
+  --name ddns-reporter \
+  --network host \
+  --restart unless-stopped \
+  -e DDNS_MANAGER_URL=http://your-manager-ip:8765 \
+  -e DDNS_MACHINE_TOKEN=your-token \
+  -e DDNS_INTERFACE_NAME=eth0 \
+  -e DDNS_REPORT_INTERVAL=60 \
+  princevan/ddns-reporter:v0.0.1
+```
+
+> **注意**: 上报端使用 `--network host` 以便访问宿主机网卡获取 IPv6 地址。
+
+### 3. 配置 Cloudflare
+
+在管理端 Settings 页面填入 Cloudflare API Token，然后给机器绑定域名即可。
+
+---
+
 ## Docker Deployment
 
 ### Manager (管理端)
