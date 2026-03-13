@@ -11,7 +11,7 @@ def get_config() -> dict:
     manager_url = os.getenv("DDNS_MANAGER_URL")
     machine_token = os.getenv("DDNS_MACHINE_TOKEN")
     interface_name = os.getenv("DDNS_INTERFACE_NAME")
-    report_interval = int(os.getenv("DDNS_REPORT_INTERVAL", "3600"))
+    report_interval = int(os.getenv("DDNS_REPORT_INTERVAL", "60"))
 
     if not manager_url or not machine_token or not interface_name:
         raise RuntimeError(
