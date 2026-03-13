@@ -1,0 +1,18 @@
+services:
+  ddns-manager:
+    build:
+      context: .
+      dockerfile: manager.Dockerfile
+    image: ddns-manager:latest
+    container_name: ddns-manager
+    restart: unless-stopped
+    ports:
+      - "8765:8000"
+    volumes:
+      - ddns-data:/data
+    environment:
+      - DDNS_ADMIN_USERNAME=${DDNS_ADMIN_USERNAME:-admin}
+      - DDNS_ADMIN_PASSWORD=${DDNS_ADMIN_PASSWORD:-changeme}
+
+volumes:
+  ddns-data:

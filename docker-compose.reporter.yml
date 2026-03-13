@@ -1,0 +1,14 @@
+services:
+  ddns-reporter:
+    build:
+      context: .
+      dockerfile: reporter.Dockerfile
+    image: ddns-reporter:latest
+    container_name: ddns-reporter
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - DDNS_MANAGER_URL=${DDNS_MANAGER_URL}
+      - DDNS_MACHINE_TOKEN=${DDNS_MACHINE_TOKEN}
+      - DDNS_INTERFACE_NAME=${DDNS_INTERFACE_NAME:-eth0}
+      - DDNS_REPORT_INTERVAL=${DDNS_REPORT_INTERVAL:-3600}

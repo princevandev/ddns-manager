@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Fira Sans', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            surface: {
+              900: '#0a0a0f',
+              800: '#12121a',
+              700: '#1a1a24',
+              600: '#22222e',
+            },
+            brand: {
+              primary: '#2563eb',
+              secondary: '#3b82f6',
+              accent: '#f97316',
+              success: '#10b981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <title>DDNS Manager - Machine</title>
+  <style>
+    body { font-family: 'Fira Sans', sans-serif; }
+    .font-mono { font-family: 'Fira Code', monospace; }
+  </style>
+</head>
+<body class="bg-surface-900 text-slate-100 min-h-screen">
+  {% raw %}
+  <!-- Top Tab Bar -->
+  <nav class="bg-surface-800 border-b border-surface-700 px-4 py-3 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-1">
+        <a href="/" class="flex items-center gap-2 py-2 px-4 text-brand-primary bg-brand-primary/10 rounded-xl">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+          </svg>
+          <span class="font-medium">机器</span>
+        </a>
+        <a href="/domains" class="flex items-center gap-2 py-2 px-4 text-slate-400 hover:text-slate-200 hover:bg-surface-700 rounded-xl transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+          </svg>
+          <span class="font-medium">域名</span>
+        </a>
+        <a href="/settings" class="flex items-center gap-2 py-2 px-4 text-slate-400 hover:text-slate-200 hover:bg-surface-700 rounded-xl transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span class="font-medium">设置</span>
+        </a>
+      </div>
+      <!-- User Avatar with Dropdown -->
+      <div class="relative group">
+        <button class="w-9 h-9 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary font-semibold hover:bg-brand-primary/30 transition-colors">
+          A
+        </button>
+        <div class="absolute right-0 top-full mt-2 w-48 bg-surface-800 border border-surface-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+          <div class="px-4 py-3 border-b border-surface-700">
+            <div class="text-sm font-medium">admin</div>
+            <div class="text-xs text-slate-500">管理员</div>
+          </div>
+          <a href="/logout" class="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-b-xl">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            退出登录
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  {% endraw %}
+
+  <div class="max-w-4xl mx-auto px-4 py-6" id="app" data-machine-id="{{ machine_id }}">{% raw %}
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-success/10 flex items-center justify-center">
+          <svg class="w-5 h-5 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-semibold" v-if="machine">{{ machine.name }}</h1>
+          <p class="text-slate-500 text-sm">机器详情</p>
+        </div>
+      </div>
+      <button @click="syncDNS" class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-4 py-2 rounded-xl transition-colors duration-200 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        同步 DNS
+      </button>
+    </header>
+
+    <!-- Token Card -->
+    <div v-if="machine" class="bg-surface-800 border border-surface-700 rounded-2xl p-5 mb-6">
+      <div class="flex items-center justify-between">
+        <div class="flex-1">
+          <div class="text-xs text-slate-500 mb-1">Machine Token</div>
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-sm text-slate-300 break-all">{{ showToken ? machine.token : '••••••••••••••••••••••••••••••••' }}</span>
+            <button @click="showToken = !showToken" class="text-slate-500 hover:text-slate-300 p-1 transition-colors flex-shrink-0">
+              <svg v-if="showToken" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+              </svg>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+            <button @click="copyToken" class="text-slate-500 hover:text-slate-300 p-1 transition-colors flex-shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Interval -->
+    <div class="bg-surface-800 border border-surface-700 rounded-2xl p-5 mb-6">
+      <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        上报间隔
+      </h2>
+      <form @submit.prevent="saveInterval" class="flex flex-col sm:flex-row gap-3">
+        <input 
+          v-model.number="reportInterval" 
+          type="number" 
+          min="0"
+          class="flex-1 bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+          placeholder="留空使用默认值"
+        />
+        <button class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200">
+          保存
+        </button>
+      </form>
+      <p class="text-xs text-slate-500 mt-2">单位：秒。留空或设为 0 使用全局默认值</p>
+    </div>
+
+    <!-- Add Domain -->
+    <div class="bg-surface-800 border border-surface-700 rounded-2xl p-5 mb-6">
+      <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        绑定域名
+      </h2>
+      <form @submit.prevent="addDomain" class="flex flex-col sm:flex-row gap-3">
+        <input 
+          v-model="newDomain" 
+          class="flex-1 bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+          placeholder="example.com"
+        />
+        <input 
+          v-model="zoneId" 
+          class="sm:w-64 bg-surface-700 border border-surface-600 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+          placeholder="Zone ID (可选)"
+        />
+        <button class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200">
+          绑定
+        </button>
+      </form>
+    </div>
+
+    <!-- Domains List -->
+    <div class="bg-surface-800 border border-surface-700 rounded-2xl p-5 mb-6">
+      <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+        </svg>
+        已绑定域名
+      </h2>
+      <div v-if="machine && machine.domains.length" class="space-y-3">
+        <div v-for="domain in machine.domains" :key="domain.id" class="bg-surface-700/50 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <div class="font-mono text-lg">{{ domain.domain_name }}</div>
+            <div class="text-sm text-slate-500 mt-1">
+              Zone: <span class="font-mono">{{ domain.zone_id || '自动' }}</span>
+              <span v-if="domain.last_ip" class="ml-3">IP: <span class="text-brand-success font-mono">{{ domain.last_ip.substring(0, 20) }}...</span></span>
+            </div>
+          </div>
+          <button @click="deleteDomain(domain.id)" class="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div v-else class="text-center py-8">
+        <div class="w-12 h-12 rounded-xl bg-surface-700 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+          </svg>
+        </div>
+        <p class="text-slate-500">暂无绑定域名</p>
+      </div>
+    </div>
+
+    <!-- IP History -->
+    <div class="bg-surface-800 border border-surface-700 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-medium flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          IP 上报历史
+        </h2>
+        <button @click="refreshHistory" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-surface-700 transition-colors" title="刷新">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </button>
+      </div>
+      <div v-if="history.length" class="space-y-2 max-h-64 overflow-y-auto">
+        <div v-for="item in history" :key="item.reported_at" class="flex items-center justify-between py-2 border-b border-surface-700 last:border-0">
+          <span class="font-mono text-sm">{{ item.ip }}</span>
+          <span class="text-slate-500 text-sm">{{ item.reported_at }}</span>
+        </div>
+      </div>
+      <div v-else class="text-center py-8">
+        <p class="text-slate-500">暂无上报记录</p>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div v-if="message" class="fixed bottom-6 right-6 bg-surface-700 border border-surface-600 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+      <svg class="w-4 h-4 text-brand-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      {{ message }}
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue
+
+    createApp({
+      data() {
+        return {
+          machineId: null,
+          machine: null,
+          history: [],
+          newDomain: '',
+          zoneId: '',
+          message: '',
+          showToken: false,
+          reportInterval: null
+        }
+      },
+      mounted() {
+        this.machineId = document.getElementById('app').dataset.machineId
+        this.loadMachine()
+        this.loadHistory()
+      },
+      methods: {
+        async loadMachine() {
+          const res = await fetch(`/api/machines/${this.machineId}`)
+          if (res.ok) {
+            this.machine = await res.json()
+            this.reportInterval = this.machine.report_interval
+          }
+        },
+        async loadHistory() {
+          const res = await fetch(`/api/machines/${this.machineId}/history`)
+          if (res.ok) {
+            this.history = await res.json()
+          }
+        },
+        async addDomain() {
+          if (!this.newDomain.trim()) return
+          const form = new FormData()
+          form.append('machine_id', this.machineId)
+          form.append('domain_name', this.newDomain.trim())
+          if (this.zoneId.trim()) {
+            form.append('zone_id', this.zoneId.trim())
+          }
+          const res = await fetch('/api/domains', { method: 'POST', body: form })
+          if (res.ok) {
+            this.newDomain = ''
+            this.zoneId = ''
+            this.message = '域名绑定成功'
+            await this.loadMachine()
+            setTimeout(() => this.message = '', 3000)
+          } else {
+            const data = await res.json()
+            this.message = data.detail || '绑定失败'
+            setTimeout(() => this.message = '', 3000)
+          }
+        },
+        async deleteDomain(id) {
+          if (!confirm('确定解绑此域名？')) return
+          const res = await fetch(`/api/domains/${id}`, { method: 'DELETE' })
+          if (res.ok) {
+            this.message = '域名已解绑'
+            await this.loadMachine()
+            setTimeout(() => this.message = '', 3000)
+          }
+        },
+        async syncDNS() {
+          this.message = '正在同步...'
+          const res = await fetch(`/api/sync/${this.machineId}`, { method: 'POST' })
+          if (res.ok) {
+            const data = await res.json()
+            if (data.status === 'ok') {
+              this.message = `DNS 已更新: ${data.updated.join(', ')}`
+            } else if (data.status === 'partial') {
+              this.message = `部分更新: ${data.updated.join(', ')}`
+            }
+            await this.loadMachine()
+          } else {
+            const data = await res.json()
+            this.message = data.detail || '同步失败'
+          }
+          setTimeout(() => this.message = '', 5000)
+        },
+        copyToken() {
+          if (this.machine) {
+            navigator.clipboard.writeText(this.machine.token)
+            this.message = 'Token 已复制'
+            setTimeout(() => this.message = '', 2000)
+          }
+        },
+        async refreshHistory() {
+          await this.loadHistory()
+          this.message = '历史已刷新'
+          setTimeout(() => this.message = '', 2000)
+        },
+        async saveInterval() {
+          const form = new FormData()
+          form.append('report_interval', this.reportInterval || 0)
+          const res = await fetch(`/api/machines/${this.machineId}`, { method: 'PATCH', body: form })
+          if (res.ok) {
+            this.message = '上报间隔已保存'
+            await this.loadMachine()
+            setTimeout(() => this.message = '', 3000)
+          } else {
+            const data = await res.json()
+            this.message = data.detail || '保存失败'
+            setTimeout(() => this.message = '', 3000)
+          }
+        }
+      }
+    }).mount('#app')
+  </script>
+  {% endraw %}
+</body>
+</html>
