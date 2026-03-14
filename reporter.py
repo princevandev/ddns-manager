@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 import os
 import time
+import logging
 import requests
 import subprocess
 import re
+
+
+def setup_logging() -> None:
+    """配置日志格式"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
 
 def get_config() -> dict:
@@ -41,8 +51,10 @@ def get_public_ipv4() -> str | None:
                 ip = resp.text.strip()
                 # 验证是有效的 IPv4
                 if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ip):
+                    logging.debug(f"Got IPv4 from {service}: {ip}")
                     return ip
-        except Exception:
+        except Exception as e:
+            logging.debug(f"Failed to get IPv4 from {service}: {e}")
             continue
     return None
 
@@ -56,7 +68,8 @@ def check_interface_exists(interface_name: str) -> bool:
             text=True,
         )
         return result.returncode == 0
-    except Exception:
+    except Exception as e:
+        logging.error(f"Failed to check interface: {e}")
         return False
 
 
@@ -69,7 +82,10 @@ def get_ipv6_address(interface_name: str) -> str | None:
             capture_output=True,
             text=True,
         )
-    except Exception:
+    except subprocess.CalledProcessError:
+        return None
+    except Exception as e:
+        logging.error(f"Failed to get IPv6 address: {e}")
         return None
 
     candidates = []
@@ -90,6 +106,8 @@ def get_ipv6_address(interface_name: str) -> str | None:
         else:
             candidates.append(ip)
     
+    if candidates:
+        logging.debug(f"Got IPv6 from {interface_name}: {candidates[0]}")
     return candidates[0] if candidates else None
 
 
@@ -111,6 +129,8 @@ def report(manager_url: str, token: str, ipv4: str | None, ipv6: str | None, int
 
 
 def main() -> None:
+    setup_logging()
+    
     config = get_config()
     interval = config["report_interval"]
     backoff = 5
@@ -119,18 +139,18 @@ def main() -> None:
     if not check_interface_exists(config["interface_name"]):
         raise RuntimeError(f"Interface '{config['interface_name']}' does not exist")
 
-    print(f"DDNS Reporter started")
-    print(f"Manager: {config['manager_url']}")
-    print(f"Interface: {config['interface_name']}")
-    print(f"Interval: {interval}s")
+    logging.info(f"DDNS Reporter started")
+    logging.info(f"Manager: {config['manager_url']}")
+    logging.info(f"Interface: {config['interface_name']}")
+    logging.info(f"Interval: {interval}s")
 
     while True:
         try:
-            ipv4 = get_public_ipv4()  # 获取公网 IPv4
+            ipv4 = get_public_ipv4()
             ipv6 = get_ipv6_address(config["interface_name"])
             
             if not ipv4 and not ipv6:
-                print("No IP address found, retrying...")
+                logging.warning("No IP address found, retrying...")
                 time.sleep(backoff)
                 backoff = min(backoff * 2, 300)
                 continue
@@ -142,12 +162,12 @@ def main() -> None:
                 ips.append(f"IPv4: {ipv4}")
             if ipv6:
                 ips.append(f"IPv6: {ipv6}")
-            print(f"Reported: {', '.join(ips)}")
+            logging.info(f"Reported: {', '.join(ips)}")
             
             backoff = 5
             time.sleep(interval)
         except Exception as exc:
-            print(f"Report error: {exc}")
+            logging.error(f"Report error: {exc}")
             time.sleep(backoff)
             backoff = min(backoff * 2, 300)
 
