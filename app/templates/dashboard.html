@@ -622,26 +622,51 @@
         },
         copyDeployCommand(machine) {
           const cmd = this.getDeployCommand(machine)
-          navigator.clipboard.writeText(cmd).then(() => {
-            this.message = '部署命令已复制'
-            setTimeout(() => this.message = '', 2000)
-          }).catch(() => {
-            const textarea = document.createElement('textarea')
-            textarea.value = cmd
-            textarea.style.position = 'fixed'
-            textarea.style.opacity = '0'
-            document.body.appendChild(textarea)
-            textarea.select()
-            try {
-              document.execCommand('copy')
+          // 先尝试现代 API
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(cmd).then(() => {
               this.message = '部署命令已复制'
               setTimeout(() => this.message = '', 2000)
-            } catch (e) {
-              this.message = '复制失败'
+            }).catch((err) => {
+              console.error('Clipboard API failed:', err)
+              this.fallbackCopy(cmd)
+            })
+          } else {
+            this.fallbackCopy(cmd)
+          }
+        },
+        fallbackCopy(text) {
+          const textarea = document.createElement('textarea')
+          textarea.value = text
+          textarea.style.position = 'fixed'
+          textarea.style.left = '0'
+          textarea.style.top = '0'
+          textarea.style.opacity = '0'
+          textarea.style.width = '2em'
+          textarea.style.height = '2em'
+          textarea.style.padding = '0'
+          textarea.style.border = 'none'
+          textarea.style.outline = 'none'
+          textarea.style.boxShadow = 'none'
+          textarea.style.background = 'transparent'
+          document.body.appendChild(textarea)
+          textarea.focus()
+          textarea.select()
+          try {
+            const successful = document.execCommand('copy')
+            if (successful) {
+              this.message = '部署命令已复制'
+              setTimeout(() => this.message = '', 2000)
+            } else {
+              this.message = '复制失败，请手动复制'
               setTimeout(() => this.message = '', 2000)
             }
-            document.body.removeChild(textarea)
-          })
+          } catch (e) {
+            console.error('Fallback copy failed:', e)
+            this.message = '复制失败，请手动复制'
+            setTimeout(() => this.message = '', 2000)
+          }
+          document.body.removeChild(textarea)
         },
         getDomainSyncStatus(domain, machine) {
           if (!domain.last_ip) return 'pending'
