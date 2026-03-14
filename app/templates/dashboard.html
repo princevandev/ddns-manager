@@ -365,16 +365,26 @@
         
         <!-- Deploy Command -->
         <div v-if="showDeploy[machine.id]" class="mt-4 bg-surface-200 dark:bg-surface-700 rounded-xl p-4">
+          <!-- Tabs -->
+          <div class="flex gap-2 mb-3">
+            <button @click="deployTab[machine.id] = 'docker-run'" :class="deployTab[machine.id] === 'docker-run' ? 'bg-brand-primary text-white' : 'bg-surface-300 dark:bg-surface-600 text-slate-700 dark:text-slate-300'" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+              Docker Run
+            </button>
+            <button @click="deployTab[machine.id] = 'docker-compose'" :class="deployTab[machine.id] === 'docker-compose' ? 'bg-brand-primary text-white' : 'bg-surface-300 dark:bg-surface-600 text-slate-700 dark:text-slate-300'" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+              Docker Compose
+            </button>
+          </div>
+          <!-- Content -->
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-slate-500">Docker 启动命令</span>
-            <button @click="copyDeployCommand(machine)" class="text-brand-primary hover:text-brand-secondary text-xs font-medium flex items-center gap-1 transition-colors">
+            <span class="text-xs text-slate-500">{{ deployTab[machine.id] === 'docker-run' ? '启动命令' : 'docker-compose.yml' }}</span>
+            <button @click="deployTab[machine.id] === 'docker-run' ? copyDeployCommand(machine) : copyDockerComposeCommand(machine)" class="text-brand-primary hover:text-brand-secondary text-xs font-medium flex items-center gap-1 transition-colors">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
               复制
             </button>
           </div>
-          <pre class="text-xs font-mono text-slate-300 bg-surface-800 dark:bg-surface-900 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">{{ getDeployCommand(machine) }}</pre>
+          <pre class="text-xs font-mono text-slate-300 bg-surface-800 dark:bg-surface-900 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">{{ deployTab[machine.id] === 'docker-run' ? getDeployCommand(machine) : getDockerComposeCommand(machine) }}</pre>
         </div>
       </div>
     </div>
@@ -435,6 +445,7 @@
           message: '',
           showToken: {},
           showDeploy: {},
+          deployTab: {},
           showAddModal: false,
           syncing: {},
           syncingAll: false
@@ -605,6 +616,9 @@
         },
         toggleDeploy(id) {
           this.showDeploy[id] = !this.showDeploy[id]
+          if (this.showDeploy[id] && !this.deployTab[id]) {
+            this.deployTab[id] = 'docker-run'
+          }
         },
         getDeployCommand(machine) {
           const managerUrl = window.location.origin
@@ -619,6 +633,22 @@
   -e DDNS_INTERFACE_NAME="eth0" \\
   -e DDNS_REPORT_INTERVAL="${interval}" \\
   princevan/ddns-reporter:latest`
+        },
+        getDockerComposeCommand(machine) {
+          const managerUrl = window.location.origin
+          const token = machine.token
+          const interval = machine.report_interval || 60
+          return `services:
+  ddns-reporter:
+    image: princevan/ddns-reporter:latest
+    container_name: ddns-reporter
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - DDNS_MANAGER_URL=${managerUrl}
+      - DDNS_MACHINE_TOKEN=${token}
+      - DDNS_INTERFACE_NAME=eth0
+      - DDNS_REPORT_INTERVAL=${interval}`
         },
         copyDeployCommand(machine) {
           const cmd = this.getDeployCommand(machine)
@@ -656,6 +686,53 @@
             const successful = document.execCommand('copy')
             if (successful) {
               this.message = '部署命令已复制'
+              setTimeout(() => this.message = '', 2000)
+            } else {
+              this.message = '复制失败，请手动复制'
+              setTimeout(() => this.message = '', 2000)
+            }
+          } catch (e) {
+            console.error('Fallback copy failed:', e)
+            this.message = '复制失败，请手动复制'
+            setTimeout(() => this.message = '', 2000)
+          }
+          document.body.removeChild(textarea)
+        },
+        copyDockerComposeCommand(machine) {
+          const cmd = this.getDockerComposeCommand(machine)
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(cmd).then(() => {
+              this.message = 'docker-compose.yml 已复制'
+              setTimeout(() => this.message = '', 2000)
+            }).catch((err) => {
+              console.error('Clipboard API failed:', err)
+              this.fallbackCopyDockerCompose(cmd)
+            })
+          } else {
+            this.fallbackCopyDockerCompose(cmd)
+          }
+        },
+        fallbackCopyDockerCompose(text) {
+          const textarea = document.createElement('textarea')
+          textarea.value = text
+          textarea.style.position = 'fixed'
+          textarea.style.left = '0'
+          textarea.style.top = '0'
+          textarea.style.opacity = '0'
+          textarea.style.width = '2em'
+          textarea.style.height = '2em'
+          textarea.style.padding = '0'
+          textarea.style.border = 'none'
+          textarea.style.outline = 'none'
+          textarea.style.boxShadow = 'none'
+          textarea.style.background = 'transparent'
+          document.body.appendChild(textarea)
+          textarea.focus()
+          textarea.select()
+          try {
+            const successful = document.execCommand('copy')
+            if (successful) {
+              this.message = 'docker-compose.yml 已复制'
               setTimeout(() => this.message = '', 2000)
             } else {
               this.message = '复制失败，请手动复制'
