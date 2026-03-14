@@ -1,17 +1,28 @@
 # DDNS Manager
 
-轻量级 DDNS 管理系统，支持 IPv6 地址自动上报与 Cloudflare DNS 解析更新。
+[Lucky](https://github.com/gdy666/lucky)和[ddns-go](https://github.com/jeessy2/ddns-go)都是非常优秀的DDNS工具，但在内网设备比较多时，需要在每台机器上都部署lucky或ddns-go，单独配置token等管理起来较为繁琐，本项目是一个轻量级内网多设备DDNS管理工具，通过在一台机器上部署管理端（manager），其他机器部署轻量的上报端（reporter），一站式管理内网所有主机的DDNS
+
+| 目前仅支持Cloudflare DDNS解析
+
+![](screenshots/dark-theme.png)
 
 ## 功能介绍
 
 - **多机器管理**：支持管理多台机器，每台机器独立 Token 认证
-- **IPv6 支持**：自动获取本机 IPv6 地址并上报
+- **IPv6支持**：自动获取本机 IPv6 地址并上报
 - **自动同步**：IP 变化时自动更新 Cloudflare DNS 解析记录
 - **域名绑定**：一台机器可绑定多个域名，支持自动获取 Zone ID
 - **实时状态**：在线状态检测、同步状态显示、IP 历史记录
-- **Web 管理界面**：深色/明亮主题切换、响应式设计、移动端适配
+- **Web管理界面**：深色/明亮主题切换、响应式设计、移动端适配
 
 ## 系统架构
+
+- **管理端(manager)**：定时将内网机器的IP同步到DNS解析
+- **上报端(reporter)**：定时将客户端机器的IP上报给管理端
+- **架构特点：**
+  - **上报端无状态**：单文件 Python 脚本，无需数据库，适合嵌入式设备
+  - **管理端轻量**：FastAPI + SQLite，单容器部署，资源占用低
+  - **解耦设计**：上报端与管理端分离，可独立部署、独立扩容
 
 ```
 ┌─────────────────┐         ┌─────────────────┐
@@ -20,7 +31,7 @@
 │                 │         │                 │
 │ - 获取本机IP    │         │ - Web UI        │
 │ - 定时上报      │         │ - 机器/域名管理 │
-│ - IPv6 支持     │         │ - DNS 同步      │
+│ - IPv4/IPv6 支持│         │ - DNS 同步      │
 └─────────────────┘         └────────┬────────┘
                                      │
                                      │ API
@@ -31,26 +42,15 @@
                             └─────────────────┘
 ```
 
-**架构特点：**
-
-- **上报端无状态**：单文件 Python 脚本，无需数据库，适合嵌入式设备
-- **管理端轻量**：FastAPI + SQLite，单容器部署，资源占用低
-- **解耦设计**：上报端与管理端分离，可独立部署、独立扩容
-
-## 项目特点
-
-### 为什么选择 DDNS Manager？
+## 为什么选择 DDNS Manager？
 
 | 特点 | 说明 |
 |------|------|
 | 🚀 **极速部署** | 一行 Docker 命令即可启动，无需复杂配置 |
 | 📦 **镜像小巧** | 基于 python:3.12-slim，镜像体积小、启动快 |
 | 🔐 **Token 认证** | 每台机器独立 Token，安全可靠 |
-| 🌐 **IPv6 优先** | 原生支持 IPv6，适合家庭宽带、云服务器 |
 | 🎨 **现代 UI** | Vue 3 + Tailwind CSS，支持深色/明亮主题 |
 | ⚡ **实时同步** | IP 变化即时更新 DNS，支持一键批量同步 |
-| 💾 **历史记录** | 保留 IP 上报历史，便于追溯 |
-| 🔧 **灵活配置** | 支持全局默认间隔和单机独立配置 |
 
 ### 与其他方案对比
 
@@ -62,41 +62,9 @@
 
 ## 快速开始
 
-### 方式一：Docker 命令
+### 1. 部署管理端
 
-**启动管理端**
-
-```bash
-docker run -d \
-  --name ddns-manager \
-  -p 8765:8000 \
-  -v ddns-data:/data \
-  -e DDNS_ADMIN_USERNAME=admin \
-  -e DDNS_ADMIN_PASSWORD=yourpassword \
-  princevan/ddns-manager:v0.0.1
-```
-
-访问 `http://your-ip:8765`，登录后创建机器获取 Token。
-
-**启动上报端**
-
-```bash
-docker run -d \
-  --name ddns-reporter \
-  --network host \
-  --restart unless-stopped \
-  -e DDNS_MANAGER_URL=http://your-manager-ip:8765 \
-  -e DDNS_MACHINE_TOKEN=your-token \
-  -e DDNS_INTERFACE_NAME=eth0 \
-  -e DDNS_REPORT_INTERVAL=60 \
-  princevan/ddns-reporter:v0.0.1
-```
-
-> 上报端使用 `--network host` 以便访问宿主机网卡获取 IPv6 地址。
-
-### 方式二：Docker Compose
-
-**管理端**
+Docker Compose(推荐)
 
 ```bash
 # 创建配置文件
@@ -107,12 +75,55 @@ EOF
 
 # 启动
 docker compose -f docker-compose.manager.yml up -d
-
-# 查看日志
-docker compose -f docker-compose.manager.yml logs -f
 ```
 
-**上报端**
+docker run命令
+
+```bash
+docker run -d \
+  --name ddns-manager \
+  -p 8765:8000 \
+  -v ddns-data:/data \
+  -e DDNS_ADMIN_USERNAME=yourusername \
+  -e DDNS_ADMIN_PASSWORD=yourpassword \
+  princevan/ddns-manager:latest
+```
+
+### 2. 创建机器
+
+访问 `http://your-ip:8765`，登录管理端后，配置 Cloudflare Token
+
+![](screenshots/dns-config.png)
+
+选择创建机器:
+![](screenshots/create-machine.png)
+
+填写机器名和选择IP类型:
+![](screenshots/create-machine-detail.png)
+
+点击【一键部署】复制docker-run或docker-compose命令到内网机器部署。注意替换命令中的网卡名，否则可能上报失败。
+![](screenshots/deploy-reporter.png)
+
+### 3. 部署上报端
+
+docker run
+
+```bash
+docker run -d \
+  --name ddns-reporter \
+  --network host \
+  --restart unless-stopped \
+  -e DDNS_MANAGER_URL=http://your-manager-ip:8765 \
+  -e DDNS_MACHINE_TOKEN=your-token \
+  -e DDNS_INTERFACE_NAME=eth0 \
+  -e DDNS_REPORT_INTERVAL=60 \
+  princevan/ddns-reporter:latest
+```
+
+ 上报端使用 `--network host` 以便访问宿主机网卡获取 IPv6 地址。
+
+
+docker-compose
 
 ```bash
 # 创建配置文件
@@ -125,26 +136,14 @@ EOF
 
 # 启动
 docker compose -f docker-compose.reporter.yml up -d
-
-# 查看日志
-docker compose -f docker-compose.reporter.yml logs -f
 ```
 
-### 配置 Cloudflare
-
-1. 在 Cloudflare 控制台创建 API Token，权限选择 `Zone.DNS` 编辑
-2. 在管理端「设置」页面填入 API Token
-3. 给机器绑定域名（Zone ID 自动获取）
-4. 点击「测试连接」验证配置
-
----
-
-## 手动部署
+## 本地部署（不推荐）
 
 ### 环境要求
 
 - Python 3.10+
-- SQLite（Python 自带）
+- SQLite
 
 ### 安装依赖
 
@@ -204,34 +203,3 @@ python reporter.py
 | `DDNS_MACHINE_TOKEN` | ✅ | - | 机器 Token |
 | `DDNS_INTERFACE_NAME` | ✅ | eth0 | 网卡名称 |
 | `DDNS_REPORT_INTERVAL` | ❌ | 3600 | 上报间隔（秒） |
-
----
-
-## API 接口
-
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| `/api/report` | POST | 上报 IP 地址 |
-| `/api/sync/{machine_id}` | POST | 同步 DNS 记录 |
-| `/api/machines` | GET/POST | 机器列表/创建 |
-| `/api/machines/{id}` | GET/DELETE/PATCH | 机器详情/删除/更新 |
-| `/api/domains` | GET/POST | 域名列表/创建 |
-| `/api/domains/{id}` | DELETE | 删除域名 |
-| `/api/settings` | GET/POST | 配置管理 |
-| `/api/cloudflare/test` | POST | 测试 Cloudflare 连接 |
-
----
-
-## 技术栈
-
-**管理端**
-- FastAPI - Web 框架
-- SQLAlchemy - ORM
-- SQLite - 数据库
-- Jinja2 - 模板引擎
-- Vue 3 (CDN) - 前端框架
-- Tailwind CSS (CDN) - 样式框架
-
-**上报端**
-- Python 标准库
-- requests - HTTP 客户端
