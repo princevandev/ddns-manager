@@ -188,10 +188,12 @@ def api_machine_history(request: Request, machine_id: int, db: Session = Depends
 
 
 @app.post("/api/machines")
-def api_create_machine(request: Request, db: Session = Depends(get_db), name: str = Form(...)):
+def api_create_machine(request: Request, db: Session = Depends(get_db), name: str = Form(...), ip_type: str = Form("ipv4")):
     require_login(request)
+    if ip_type not in ("ipv4", "ipv6"):
+        ip_type = "ipv4"
     token = secrets.token_urlsafe(32)
-    machine = Machine(name=name, token=token)
+    machine = Machine(name=name, token=token, ip_type=ip_type)
     db.add(machine)
     db.commit()
     db.refresh(machine)
@@ -199,6 +201,7 @@ def api_create_machine(request: Request, db: Session = Depends(get_db), name: st
         "id": machine.id,
         "name": machine.name,
         "token": machine.token,
+        "ip_type": machine.ip_type,
         "created_at": utc_iso(machine.created_at),
     }
 

@@ -206,14 +206,28 @@
           添加机器
         </h2>
         <form @submit.prevent="createMachine" class="space-y-4">
-          <input 
-            v-model="newMachine" 
-            class="w-full bg-surface-200 dark:bg-surface-700 border border-surface-400 dark:border-surface-600 rounded-xl p-3 text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
-            placeholder="输入机器名称，如: server-01"
-            autofocus
-          />
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-2">机器名称</label>
+            <input 
+              v-model="newMachine" 
+              class="w-full bg-surface-200 dark:bg-surface-700 border border-surface-400 dark:border-surface-600 rounded-xl p-3 text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
+              placeholder="如: server-01"
+              autofocus
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-2">IP 类型</label>
+            <div class="flex gap-3">
+              <button type="button" @click="newMachineIpType = 'ipv4'" :class="newMachineIpType === 'ipv4' ? 'bg-brand-primary text-white' : 'bg-surface-200 dark:bg-surface-700 text-slate-700 dark:text-slate-300'" class="flex-1 font-medium px-4 py-3 rounded-xl transition-colors">
+                IPv4 (A 记录)
+              </button>
+              <button type="button" @click="newMachineIpType = 'ipv6'" :class="newMachineIpType === 'ipv6' ? 'bg-brand-primary text-white' : 'bg-surface-200 dark:bg-surface-700 text-slate-700 dark:text-slate-300'" class="flex-1 font-medium px-4 py-3 rounded-xl transition-colors">
+                IPv6 (AAAA)
+              </button>
+            </div>
+          </div>
           <div class="flex gap-3">
-            <button type="button" @click="showAddModal = false; newMachine = ''" class="flex-1 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 text-slate-700 dark:text-slate-300 font-medium px-4 py-3 rounded-xl transition-colors">
+            <button type="button" @click="showAddModal = false; newMachine = ''; newMachineIpType = 'ipv4'" class="flex-1 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 text-slate-700 dark:text-slate-300 font-medium px-4 py-3 rounded-xl transition-colors">
               取消
             </button>
             <button type="submit" class="flex-1 bg-brand-primary hover:bg-brand-secondary text-white font-medium px-4 py-3 rounded-xl transition-colors">
@@ -398,6 +412,7 @@
         return {
           machines: [],
           newMachine: '',
+          newMachineIpType: 'ipv4',
           message: '',
           showToken: {},
           showAddModal: false,
@@ -430,9 +445,11 @@
           if (!this.newMachine.trim()) return
           const form = new FormData()
           form.append('name', this.newMachine.trim())
+          form.append('ip_type', this.newMachineIpType)
           const res = await fetch('/api/machines', { method: 'POST', body: form })
           if (res.ok) {
             this.newMachine = ''
+            this.newMachineIpType = 'ipv4'
             this.showAddModal = false
             this.message = '机器创建成功'
             await this.loadMachines()
