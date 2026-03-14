@@ -611,7 +611,7 @@
           const token = machine.token
           const interval = machine.report_interval || 60
           return `docker run -d \\
-  --name ddns-reporter-${machine.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')} \\
+  --name ddns-reporter \\
   --network host \\
   --restart unless-stopped \\
   -e DDNS_MANAGER_URL="${managerUrl}" \\
