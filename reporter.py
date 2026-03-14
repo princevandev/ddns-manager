@@ -47,6 +47,19 @@ def get_public_ipv4() -> str | None:
     return None
 
 
+def check_interface_exists(interface_name: str) -> bool:
+    """检查网卡是否存在"""
+    try:
+        result = subprocess.run(
+            ["ip", "link", "show", "dev", interface_name],
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
 def get_ipv6_address(interface_name: str) -> str | None:
     """获取 IPv6 地址"""
     try:
@@ -101,6 +114,10 @@ def main() -> None:
     config = get_config()
     interval = config["report_interval"]
     backoff = 5
+
+    # 检查网卡是否存在
+    if not check_interface_exists(config["interface_name"]):
+        raise RuntimeError(f"Interface '{config['interface_name']}' does not exist")
 
     print(f"DDNS Reporter started")
     print(f"Manager: {config['manager_url']}")
