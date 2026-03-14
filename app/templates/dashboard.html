@@ -290,15 +290,14 @@
             </div>
           </div>
           <div class="text-right">
-            <div class="text-xs text-slate-500 mb-1">IP 地址</div>
-            <div class="space-y-1">
-              <div v-if="machine.last_ipv4" class="font-mono text-xs text-brand-success bg-brand-success/10 px-2 py-1 rounded-lg inline-block">
-                IPv4: {{ machine.last_ipv4 }}
-              </div>
-              <div v-if="machine.last_ipv6" class="font-mono text-xs text-brand-success bg-brand-success/10 px-2 py-1 rounded-lg inline-block">
-                IPv6: {{ machine.last_ipv6.length > 20 ? machine.last_ipv6.substring(0, 20) + '...' : machine.last_ipv6 }}
-              </div>
-              <div v-if="!machine.last_ipv4 && !machine.last_ipv6" class="text-sm text-slate-500">未上报</div>
+            <div class="text-xs text-slate-500 mb-1">{{ machine.ip_type?.toUpperCase() || 'IPv4' }} 地址</div>
+            <div class="font-mono text-sm text-brand-success bg-brand-success/10 px-2 py-1 rounded-lg inline-block">
+              <template v-if="machine.ip_type === 'ipv6'">
+                {{ machine.last_ipv6 ? (machine.last_ipv6.length > 25 ? machine.last_ipv6.substring(0, 25) + '...' : machine.last_ipv6) : '未上报' }}
+              </template>
+              <template v-else>
+                {{ machine.last_ipv4 || '未上报' }}
+              </template>
             </div>
             <div v-if="machine.last_reported" class="text-xs text-slate-600 mt-1">{{ formatTime(machine.last_reported) }}</div>
           </div>

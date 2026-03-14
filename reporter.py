@@ -26,28 +26,24 @@ def get_config() -> dict:
     }
 
 
-def get_ipv4_address(interface_name: str) -> str | None:
-    """获取 IPv4 地址"""
-    try:
-        result = subprocess.run(
-            ["ip", "-4", "addr", "show", "dev", interface_name],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except Exception:
-        return None
-
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if not line.startswith("inet"):
+def get_public_ipv4() -> str | None:
+    """通过外部服务获取公网 IPv4 地址"""
+    services = [
+        "https://api.ipify.org",
+        "https://api4.ipify.org",
+        "https://ipv4.icanhazip.com",
+        "https://v4.ident.me",
+    ]
+    for service in services:
+        try:
+            resp = requests.get(service, timeout=5)
+            if resp.status_code == 200:
+                ip = resp.text.strip()
+                # 验证是有效的 IPv4
+                if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ip):
+                    return ip
+        except Exception:
             continue
-        match = re.search(r"inet\s+([\d.]+)/", line)
-        if match:
-            ip = match.group(1)
-            # 排除内网地址（可选，根据需求决定是否上报）
-            if not ip.startswith("127."):
-                return ip
     return None
 
 
@@ -113,7 +109,7 @@ def main() -> None:
 
     while True:
         try:
-            ipv4 = get_ipv4_address(config["interface_name"])
+            ipv4 = get_public_ipv4()  # 获取公网 IPv4
             ipv6 = get_ipv6_address(config["interface_name"])
             
             if not ipv4 and not ipv6:

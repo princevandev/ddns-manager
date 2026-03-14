@@ -118,7 +118,34 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-semibold" v-if="machine">{{ machine.name }}</h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-semibold" v-if="machine && !editingName">{{ machine.name }}</h1>
+            <input 
+              v-if="editingName" 
+              v-model="machineName" 
+              @keyup.enter="saveName" 
+              @keyup.escape="cancelEditName"
+              class="text-xl font-semibold bg-surface-200 dark:bg-surface-700 border border-brand-primary rounded-lg px-2 py-1 text-slate-800 dark:text-slate-100 focus:outline-none"
+              ref="nameInput"
+            />
+            <button v-if="machine && !editingName" @click="startEditName" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-1 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </button>
+            <template v-if="editingName">
+              <button @click="saveName" class="text-brand-success hover:text-green-400 p-1 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+              <button @click="cancelEditName" class="text-slate-500 hover:text-slate-300 p-1 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </template>
+          </div>
           <p class="text-slate-500 text-sm">机器详情</p>
         </div>
       </div>
@@ -373,7 +400,9 @@
           showToken: false,
           reportInterval: null,
           ipType: 'ipv4',
-          showAddModal: false
+          showAddModal: false,
+          editingName: false,
+          machineName: ''
         }
       },
       mounted() {
@@ -483,6 +512,37 @@
           } else {
             const data = await res.json()
             this.message = data.detail || '保存失败'
+            setTimeout(() => this.message = '', 3000)
+          }
+        },
+        startEditName() {
+          this.machineName = this.machine.name
+          this.editingName = true
+          this.$nextTick(() => {
+            this.$refs.nameInput.focus()
+          })
+        },
+        cancelEditName() {
+          this.editingName = false
+          this.machineName = ''
+        },
+        async saveName() {
+          if (!this.machineName.trim()) {
+            this.message = '名称不能为空'
+            setTimeout(() => this.message = '', 3000)
+            return
+          }
+          const form = new FormData()
+          form.append('name', this.machineName.trim())
+          const res = await fetch(`/api/machines/${this.machineId}`, { method: 'PATCH', body: form })
+          if (res.ok) {
+            this.machine.name = this.machineName.trim()
+            this.editingName = false
+            this.message = '名称已更新'
+            setTimeout(() => this.message = '', 3000)
+          } else {
+            const data = await res.json()
+            this.message = data.detail || '更新失败'
             setTimeout(() => this.message = '', 3000)
           }
         },

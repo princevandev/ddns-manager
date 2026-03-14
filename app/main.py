@@ -222,6 +222,7 @@ def api_update_machine(
     request: Request,
     machine_id: int,
     db: Session = Depends(get_db),
+    name: str | None = Form(None),
     report_interval: int | None = Form(None),
     ip_type: str | None = Form(None),
 ):
@@ -230,6 +231,13 @@ def api_update_machine(
     machine = db.get(Machine, machine_id)
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
+    
+    if name is not None and name.strip():
+        # 检查名称是否已被其他机器使用
+        existing = db.query(Machine).filter(Machine.name == name.strip(), Machine.id != machine_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Machine name already exists")
+        machine.name = name.strip()
     
     if report_interval is not None:
         machine.report_interval = report_interval if report_interval > 0 else None
