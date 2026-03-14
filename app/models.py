@@ -17,7 +17,10 @@ class Machine(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    report_interval: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 上报间隔(秒)，null 使用默认值
+    report_interval: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ip_type: Mapped[str] = mapped_column(String(4), nullable=False, default="ipv4")  # ipv4 或 ipv6
+    last_ipv4: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_ipv6: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     domains: Mapped[list["Domain"]] = relationship("Domain", back_populates="machine", cascade="all, delete-orphan")
@@ -45,6 +48,7 @@ class IPHistory(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     machine_id: Mapped[int] = mapped_column(Integer, ForeignKey("machines.id"), nullable=False)
     ip: Mapped[str] = mapped_column(String(64), nullable=False)
+    ip_type: Mapped[str] = mapped_column(String(4), nullable=False, default="ipv6")  # ipv4 或 ipv6
     reported_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     machine: Mapped[Machine] = relationship("Machine", back_populates="ip_history")

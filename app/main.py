@@ -96,6 +96,7 @@ def api_list_machines(request: Request, db: Session = Depends(get_db)):
     machines = db.query(Machine).all()
     payload = []
     for machine in machines:
+        # 获取最后上报时间
         last_report = (
             db.query(IPHistory)
             .filter(IPHistory.machine_id == machine.id)
@@ -108,8 +109,10 @@ def api_list_machines(request: Request, db: Session = Depends(get_db)):
                 "name": machine.name,
                 "token": machine.token,
                 "report_interval": machine.report_interval,
+                "ip_type": machine.ip_type,
                 "created_at": utc_iso(machine.created_at),
-                "last_ip": last_report.ip if last_report else None,
+                "last_ipv4": machine.last_ipv4,
+                "last_ipv6": machine.last_ipv6,
                 "last_reported": utc_iso(last_report.reported_at) if last_report else None,
                 "domains": [
                     {
@@ -139,7 +142,10 @@ def api_get_machine(request: Request, machine_id: int, db: Session = Depends(get
         "name": machine.name,
         "token": machine.token,
         "report_interval": machine.report_interval,
+        "ip_type": machine.ip_type,
         "created_at": utc_iso(machine.created_at),
+        "last_ipv4": machine.last_ipv4,
+        "last_ipv6": machine.last_ipv6,
         "domains": [
             {
                 "id": d.id,
@@ -158,9 +164,15 @@ def api_get_machine(request: Request, machine_id: int, db: Session = Depends(get
 @app.get("/api/machines/{machine_id}/history")
 def api_machine_history(request: Request, machine_id: int, db: Session = Depends(get_db)):
     require_login(request)
+    machine = db.get(Machine, machine_id)
+    if not machine:
+        raise HTTPException(status_code=404, detail="Machine not found")
+    
+    # 只返回与机器 ip_type 匹配的历史记录
+    ip_type = machine.ip_type or "ipv4"
     history = (
         db.query(IPHistory)
-        .filter(IPHistory.machine_id == machine_id)
+        .filter(IPHistory.machine_id == machine_id, IPHistory.ip_type == ip_type)
         .order_by(IPHistory.reported_at.desc())
         .limit(50)
         .all()
@@ -168,6 +180,7 @@ def api_machine_history(request: Request, machine_id: int, db: Session = Depends
     return [
         {
             "ip": item.ip,
+            "ip_type": item.ip_type,
             "reported_at": utc_iso(item.reported_at),
         }
         for item in history
@@ -207,6 +220,7 @@ def api_update_machine(
     machine_id: int,
     db: Session = Depends(get_db),
     report_interval: int | None = Form(None),
+    ip_type: str | None = Form(None),
 ):
     """更新机器属性"""
     require_login(request)
@@ -217,11 +231,15 @@ def api_update_machine(
     if report_interval is not None:
         machine.report_interval = report_interval if report_interval > 0 else None
     
+    if ip_type is not None and ip_type in ("ipv4", "ipv6"):
+        machine.ip_type = ip_type
+    
     db.commit()
     return {
         "id": machine.id,
         "name": machine.name,
         "report_interval": machine.report_interval,
+        "ip_type": machine.ip_type,
     }
 
 
@@ -359,46 +377,64 @@ async def api_cf_test(request: Request, db: Session = Depends(get_db)):
 async def api_report(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     token = data.get("token")
-    ip = data.get("ip")
-    report_interval = data.get("report_interval")  # 上报端主动上报的间隔
-    if not token or not ip:
-        raise HTTPException(status_code=400, detail="token and ip required")
+    ipv4 = data.get("ipv4")
+    ipv6 = data.get("ipv6")
+    ip = data.get("ip")  # 兼容旧版
+    report_interval = data.get("report_interval")
+    
+    if not token:
+        raise HTTPException(status_code=400, detail="token required")
+    
+    # 兼容旧版：如果只有ip参数，当作ipv6处理
+    if not ipv4 and not ipv6 and ip:
+        ipv6 = ip
+    
+    if not ipv4 and not ipv6:
+        raise HTTPException(status_code=400, detail="ipv4 or ipv6 required")
 
     machine = db.query(Machine).filter(Machine.token == token).first()
     if not machine:
         raise HTTPException(status_code=401, detail="invalid token")
 
-    # 更新上报间隔（如果上报端提供了）
+    # 更新上报间隔
     if report_interval and isinstance(report_interval, int) and report_interval > 0:
         machine.report_interval = report_interval
 
-    db.add(IPHistory(machine_id=machine.id, ip=ip))
+    # 更新 IP 并记录历史
+    if ipv4:
+        machine.last_ipv4 = ipv4
+        db.add(IPHistory(machine_id=machine.id, ip=ipv4, ip_type="ipv4"))
+    if ipv6:
+        machine.last_ipv6 = ipv6
+        db.add(IPHistory(machine_id=machine.id, ip=ipv6, ip_type="ipv6"))
+    
     db.commit()
 
     cf_token = get_cf_token(db)
     if not cf_token:
         return {"status": "ok", "updated": [], "warning": "Cloudflare token not configured"}
 
+    # 自动同步（使用 IPv6 优先）
+    target_ip = ipv6 or ipv4
     updated_domains = []
     for domain in machine.domains:
         if not domain.enabled:
             continue
-        if domain.last_ip == ip:
+        if domain.last_ip == target_ip:
             continue
         
-        # 自动获取 zone_id
         zone_id = domain.zone_id
         if not zone_id:
             zone_id = await get_zone_id(cf_token, domain.domain_name)
             if zone_id:
                 domain.zone_id = zone_id
             else:
-                continue  # 跳过无法获取 zone 的域名
+                continue
         
         try:
-            result = await upsert_record(cf_token, zone_id, domain.domain_name, ip, domain.record_id)
+            result = await upsert_record(cf_token, zone_id, domain.domain_name, target_ip, domain.record_id)
             domain.record_id = result.record_id
-            domain.last_ip = ip
+            domain.last_ip = target_ip
             domain.last_updated = datetime.utcnow()
             updated_domains.append(domain.domain_name)
         except Exception as exc:
@@ -410,24 +446,23 @@ async def api_report(request: Request, db: Session = Depends(get_db)):
 
 @app.post("/api/sync/{machine_id}")
 async def api_sync_machine(machine_id: int, request: Request, db: Session = Depends(get_db)):
-    """手动触发同步：用机器最后上报的 IP 更新所有绑定的域名"""
+    """手动触发同步：用机器配置的 IP 类型更新所有绑定的域名"""
     require_login(request)
     
     machine = db.get(Machine, machine_id)
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
     
-    # 获取最后上报的 IP
-    last_report = (
-        db.query(IPHistory)
-        .filter(IPHistory.machine_id == machine.id)
-        .order_by(IPHistory.reported_at.desc())
-        .first()
-    )
-    if not last_report:
-        raise HTTPException(status_code=400, detail="No IP report found for this machine")
+    # 根据机器配置的 ip_type 获取目标 IP
+    ip_type = machine.ip_type or "ipv4"
+    if ip_type == "ipv4":
+        ip = machine.last_ipv4
+    else:
+        ip = machine.last_ipv6
     
-    ip = last_report.ip
+    if not ip:
+        raise HTTPException(status_code=400, detail=f"No {ip_type} address reported")
+    
     cf_token = get_cf_token(db)
     if not cf_token:
         raise HTTPException(status_code=400, detail="Cloudflare token not configured")

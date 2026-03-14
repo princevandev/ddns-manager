@@ -26,7 +26,33 @@ def get_config() -> dict:
     }
 
 
-def get_ipv6_address(interface_name: str) -> str:
+def get_ipv4_address(interface_name: str) -> str | None:
+    """获取 IPv4 地址"""
+    try:
+        result = subprocess.run(
+            ["ip", "-4", "addr", "show", "dev", interface_name],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except Exception:
+        return None
+
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("inet"):
+            continue
+        match = re.search(r"inet\s+([\d.]+)/", line)
+        if match:
+            ip = match.group(1)
+            # 排除内网地址（可选，根据需求决定是否上报）
+            if not ip.startswith("127."):
+                return ip
+    return None
+
+
+def get_ipv6_address(interface_name: str) -> str | None:
+    """获取 IPv6 地址"""
     try:
         result = subprocess.run(
             ["ip", "-6", "addr", "show", "dev", interface_name],
@@ -34,8 +60,8 @@ def get_ipv6_address(interface_name: str) -> str:
             capture_output=True,
             text=True,
         )
-    except Exception as exc:
-        raise RuntimeError(f"Failed to run ip command: {exc}")
+    except Exception:
+        return None
 
     candidates = []
     for line in result.stdout.splitlines():
@@ -46,18 +72,31 @@ def get_ipv6_address(interface_name: str) -> str:
         if not match:
             continue
         ip = match.group(1)
+        # 跳过链路本地地址
         if ip.lower().startswith("fe80"):
             continue
-        if "scope global" in line or "scope global dynamic" in line:
+        # 优先选择全局地址
+        if "scope global" in line:
+            candidates.insert(0, ip)
+        else:
             candidates.append(ip)
-    if not candidates:
-        raise RuntimeError("No global IPv6 address found")
-    return candidates[0]
+    
+    return candidates[0] if candidates else None
 
 
-def report(manager_url: str, token: str, ip: str, interval: int) -> None:
+def report(manager_url: str, token: str, ipv4: str | None, ipv6: str | None, interval: int) -> None:
+    """上报 IP 地址"""
     url = manager_url.rstrip("/") + "/api/report"
-    resp = requests.post(url, json={"token": token, "ip": ip, "report_interval": interval}, timeout=10)
+    payload = {"token": token, "report_interval": interval}
+    if ipv4:
+        payload["ipv4"] = ipv4
+    if ipv6:
+        payload["ipv6"] = ipv6
+    
+    if not ipv4 and not ipv6:
+        raise RuntimeError("No IP address to report")
+    
+    resp = requests.post(url, json=payload, timeout=10)
     if resp.status_code != 200:
         raise RuntimeError(f"Report failed: {resp.status_code} {resp.text}")
 
@@ -74,9 +113,24 @@ def main() -> None:
 
     while True:
         try:
-            ip = get_ipv6_address(config["interface_name"])
-            report(config["manager_url"], config["machine_token"], ip, interval)
-            print(f"Reported IP: {ip}")
+            ipv4 = get_ipv4_address(config["interface_name"])
+            ipv6 = get_ipv6_address(config["interface_name"])
+            
+            if not ipv4 and not ipv6:
+                print("No IP address found, retrying...")
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 300)
+                continue
+            
+            report(config["manager_url"], config["machine_token"], ipv4, ipv6, interval)
+            
+            ips = []
+            if ipv4:
+                ips.append(f"IPv4: {ipv4}")
+            if ipv6:
+                ips.append(f"IPv6: {ipv6}")
+            print(f"Reported: {', '.join(ips)}")
+            
             backoff = 5
             time.sleep(interval)
         except Exception as exc:
