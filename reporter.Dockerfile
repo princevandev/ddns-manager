@@ -1,5 +1,11 @@
 FROM python:3.12-alpine
 
+# 设置时区
+ENV TZ=Asia/Shanghai
+RUN apk add --no-cache tzdata && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
+
 WORKDIR /app
 
 # 安装 iproute2 提供 ip 命令

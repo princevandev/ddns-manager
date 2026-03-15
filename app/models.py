@@ -17,7 +17,8 @@ class Machine(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    report_interval: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    report_interval: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 上报间隔（秒），用于在线判断
+    dns_sync_interval: Mapped[int | None] = mapped_column(Integer, nullable=True)  # DNS同步间隔（秒）
     ip_type: Mapped[str] = mapped_column(String(4), nullable=False, default="ipv4")  # ipv4 或 ipv6
     last_ipv4: Mapped[str | None] = mapped_column(String(64), nullable=True)
     last_ipv6: Mapped[str | None] = mapped_column(String(64), nullable=True)

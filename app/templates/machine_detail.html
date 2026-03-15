@@ -218,27 +218,27 @@
       </div>
     </div>
 
-    <!-- Report Interval -->
+    <!-- DNS Sync Interval -->
     <div class="bg-surface-100 dark:bg-surface-800 border border-surface-300 dark:border-surface-700 rounded-2xl p-5 mb-6">
       <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
         <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
-        上报间隔
+        DNS 同步间隔
       </h2>
-      <form @submit.prevent="saveInterval" class="flex flex-col sm:flex-row gap-3">
+      <form @submit.prevent="saveDnsSyncInterval" class="flex flex-col sm:flex-row gap-3">
         <input 
-          v-model.number="reportInterval" 
+          v-model.number="dnsSyncInterval" 
           type="number" 
           min="0"
           class="flex-1 bg-surface-200 dark:bg-surface-700 border border-surface-400 dark:border-surface-600 rounded-xl p-3 text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors"
-          placeholder="留空使用默认值"
+          :placeholder="'留空使用默认值: ' + defaultSyncInterval + ' 秒'"
         />
         <button class="bg-brand-primary hover:bg-brand-secondary text-white font-medium px-6 py-3 rounded-xl transition-colors duration-200">
           保存
         </button>
       </form>
-      <p class="text-xs text-slate-500 mt-2">单位：秒。留空或设为 0 使用全局默认值</p>
+      <p class="text-xs text-slate-500 mt-2">单位：秒。管理端多久同步一次 Cloudflare DNS，留空或设为 0 使用全局默认值 ({{ defaultSyncInterval }} 秒)</p>
     </div>
 
     <!-- Add Domain Button -->
@@ -399,7 +399,8 @@
           zoneId: '',
           message: '',
           showToken: false,
-          reportInterval: null,
+          dnsSyncInterval: null,
+          defaultSyncInterval: 3600,
           ipType: 'ipv4',
           showAddModal: false,
           editingName: false,
@@ -410,13 +411,21 @@
         this.machineId = document.getElementById('app').dataset.machineId
         this.loadMachine()
         this.loadHistory()
+        this.loadSettings()
       },
       methods: {
+        async loadSettings() {
+          const res = await fetch('/api/settings')
+          if (res.ok) {
+            const data = await res.json()
+            this.defaultSyncInterval = data.default_report_interval || 3600
+          }
+        },
         async loadMachine() {
           const res = await fetch(`/api/machines/${this.machineId}`)
           if (res.ok) {
             this.machine = await res.json()
-            this.reportInterval = this.machine.report_interval
+            this.dnsSyncInterval = this.machine.dns_sync_interval
             this.ipType = this.machine.ip_type || 'ipv4'
           }
         },
@@ -486,20 +495,6 @@
           this.message = '历史已刷新'
           setTimeout(() => this.message = '', 2000)
         },
-        async saveInterval() {
-          const form = new FormData()
-          form.append('report_interval', this.reportInterval || 0)
-          const res = await fetch(`/api/machines/${this.machineId}`, { method: 'PATCH', body: form })
-          if (res.ok) {
-            this.message = '上报间隔已保存'
-            await this.loadMachine()
-            setTimeout(() => this.message = '', 3000)
-          } else {
-            const data = await res.json()
-            this.message = data.detail || '保存失败'
-            setTimeout(() => this.message = '', 3000)
-          }
-        },
         async saveIpType(type) {
           const form = new FormData()
           form.append('ip_type', type)
@@ -509,6 +504,20 @@
             this.message = `已切换到 ${type.toUpperCase()}`
             await this.loadMachine()
             await this.loadHistory()
+            setTimeout(() => this.message = '', 3000)
+          } else {
+            const data = await res.json()
+            this.message = data.detail || '保存失败'
+            setTimeout(() => this.message = '', 3000)
+          }
+        },
+        async saveDnsSyncInterval() {
+          const form = new FormData()
+          form.append('dns_sync_interval', this.dnsSyncInterval || 0)
+          const res = await fetch(`/api/machines/${this.machineId}`, { method: 'PATCH', body: form })
+          if (res.ok) {
+            this.message = 'DNS 同步间隔已保存'
+            await this.loadMachine()
             setTimeout(() => this.message = '', 3000)
           } else {
             const data = await res.json()
