@@ -9,7 +9,8 @@
 ## 功能介绍
 
 - **多机器管理**：支持管理多台机器，每台机器独立 Token 认证
-- **IPv6支持**：自动获取本机 IPv6 地址并上报
+- **IPv4/IPv6支持**：自动获取本机公网 IP 地址并上报
+- **自动检测网卡**：支持自动检测公网 IP，无需手动指定网卡
 - **自动同步**：IP 变化时自动更新 Cloudflare DNS 解析记录
 - **域名绑定**：一台机器可绑定多个域名，支持自动获取 Zone ID
 - **实时状态**：在线状态检测、同步状态显示、IP 历史记录
@@ -116,7 +117,7 @@ docker run -d \
 填写机器名和选择IP类型:
 ![](screenshots/create-machine-detail.png)
 
-点击【一键部署】复制docker-run或docker-compose命令到内网机器部署。注意替换命令中的网卡名，否则可能上报失败。
+点击【一键部署】复制docker-run或docker-compose命令到内网机器部署。
 ![](screenshots/deploy-reporter.png)
 
 ### 3. 部署上报端
@@ -134,7 +135,7 @@ services:
     environment:
       - DDNS_MANAGER_URL=http://your-ip:8765
       - DDNS_MACHINE_TOKEN=machine-token
-      - DDNS_INTERFACE_NAME=eth0  # 替换成对应网卡名
+      - DDNS_INTERFACE_NAME=auto  # 自动检测公网 IP，或修改为对应的网卡名
       - DDNS_REPORT_INTERVAL=60
 ```
 <details>
@@ -147,12 +148,13 @@ docker run -d \
   --restart unless-stopped \
   -e DDNS_MANAGER_URL=http://your-manager-ip:8765 \
   -e DDNS_MACHINE_TOKEN=your-token \
-  -e DDNS_INTERFACE_NAME=eth0 \
+  -e DDNS_INTERFACE_NAME=auto \
   -e DDNS_REPORT_INTERVAL=60 \
   princevan/ddns-reporter:latest
 ```
 
-- 注意：上报端使用 `--network host` 以便访问宿主机网卡获取 IPv6 地址。
+- 注意：上报端使用 `--network host` 以便访问宿主机网卡获取 IP 地址。
+- `DDNS_INTERFACE_NAME=auto` 会自动检测所有网卡的公网 IP，也可指定具体网卡名如 `eth0`。
 </details>
 
 
@@ -185,7 +187,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8765
 ```bash
 export DDNS_MANAGER_URL=http://your-manager-ip:8765
 export DDNS_MACHINE_TOKEN=your-token
-export DDNS_INTERFACE_NAME=eth0
+export DDNS_INTERFACE_NAME=auto
 export DDNS_REPORT_INTERVAL=60
 
 python reporter.py
@@ -219,5 +221,20 @@ python reporter.py
 |------|------|--------|------|
 | `DDNS_MANAGER_URL` | ✅ | - | 管理端地址 |
 | `DDNS_MACHINE_TOKEN` | ✅ | - | 机器 Token |
-| `DDNS_INTERFACE_NAME` | ✅ | eth0 | 网卡名称 |
-| `DDNS_REPORT_INTERVAL` | ❌ | 3600 | 上报间隔（秒） |
+| `DDNS_INTERFACE_NAME` | ❌ | auto | 网卡名称，`auto` 自动检测公网 IP |
+| `DDNS_REPORT_INTERVAL` | ❌ | 60 | 上报间隔（秒） |
+
+### 自动检测网卡功能
+
+当 `DDNS_INTERFACE_NAME=auto` 时，上报端会自动：
+1. 扫描所有物理网卡（排除 lo、docker、veth 等虚拟网卡）
+2. 从每个网卡获取 IPv4 和 IPv6 地址
+3. 过滤掉私有地址（192.168.x.x、10.x.x.x、172.16-31.x.x）和链路本地地址（fe80::）
+4. 上报找到的第一个公网 IPv4 和 IPv6
+
+**适用场景：**
+- 不确定网卡名称时
+- 多网卡环境
+- 简化部署配置
+
+**指定网卡：** 如果需要从特定网卡获取 IP，可设置为具体网卡名如 `eth0`、`ens33` 等。
