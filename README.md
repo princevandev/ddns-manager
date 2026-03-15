@@ -64,20 +64,34 @@
 
 ### 1. 部署管理端
 
-Docker Compose(推荐)
+##### Docker Compose(推荐)
 
+首先创建`docker-compose.manager.yml`:
+
+```yaml
+services:
+  ddns-manager:
+    image: princevan/ddns-manager:latest
+    container_name: ddns-manager
+    restart: unless-stopped
+    ports:
+      - "8765:8000"
+    volumes:
+      - ddns-data:/data
+    environment:
+      - DDNS_ADMIN_USERNAME=admin
+      - DDNS_ADMIN_PASSWORD=yourpassword
+volumes:
+  ddns-data:
+```
+
+启动manager
 ```bash
-# 创建配置文件
-cat > .env << EOF
-DDNS_ADMIN_USERNAME=admin
-DDNS_ADMIN_PASSWORD=yourpassword
-EOF
-
-# 启动
 docker compose -f docker-compose.manager.yml up -d
 ```
 
-docker run命令
+<details>
+<summary><strong>docker run命令</strong></summary>
 
 ```bash
 docker run -d \
@@ -88,6 +102,7 @@ docker run -d \
   -e DDNS_ADMIN_PASSWORD=yourpassword \
   princevan/ddns-manager:latest
 ```
+</details>
 
 ### 2. 创建机器
 
@@ -106,7 +121,24 @@ docker run -d \
 
 ### 3. 部署上报端
 
-docker run
+**docker-compose**
+
+首先创建docker-compose.reporter.yml
+```yaml
+services:
+  ddns-reporter:
+    image: princevan/ddns-reporter:latest
+    container_name: ddns-reporter
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - DDNS_MANAGER_URL=http://your-ip:8765
+      - DDNS_MACHINE_TOKEN=machine-token
+      - DDNS_INTERFACE_NAME=eth0  # 替换成对应网卡名
+      - DDNS_REPORT_INTERVAL=60
+```
+<details>
+<summary><strong>docker run</strong></summary>
 
 ```bash
 docker run -d \
@@ -120,23 +152,9 @@ docker run -d \
   princevan/ddns-reporter:latest
 ```
 
- 上报端使用 `--network host` 以便访问宿主机网卡获取 IPv6 地址。
+- 注意：上报端使用 `--network host` 以便访问宿主机网卡获取 IPv6 地址。
+</details>
 
-
-docker-compose
-
-```bash
-# 创建配置文件
-cat > .env << EOF
-DDNS_MANAGER_URL=http://your-manager-ip:8765
-DDNS_MACHINE_TOKEN=your-token
-DDNS_INTERFACE_NAME=eth0
-DDNS_REPORT_INTERVAL=60
-EOF
-
-# 启动
-docker compose -f docker-compose.reporter.yml up -d
-```
 
 ## 本地部署（不推荐）
 
