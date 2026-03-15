@@ -631,7 +631,7 @@
   --restart unless-stopped \\
   -e DDNS_MANAGER_URL="${managerUrl}" \\
   -e DDNS_MACHINE_TOKEN="${token}" \\
-  -e DDNS_INTERFACE_NAME="eth0" \\
+  -e DDNS_INTERFACE_NAME="auto" \\
   -e DDNS_REPORT_INTERVAL="${interval}" \\
   princevan/ddns-reporter:latest`
         },
@@ -648,7 +648,7 @@
     environment:
       - DDNS_MANAGER_URL=${managerUrl}
       - DDNS_MACHINE_TOKEN=${token}
-      - DDNS_INTERFACE_NAME=eth0
+      - DDNS_INTERFACE_NAME=auto
       - DDNS_REPORT_INTERVAL=${interval}`
         },
         copyDeployCommand(machine) {

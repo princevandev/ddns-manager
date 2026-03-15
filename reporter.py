@@ -5,6 +5,7 @@ import logging
 import requests
 import subprocess
 import re
+import ipaddress
 
 
 def setup_logging() -> None:
@@ -20,12 +21,12 @@ def get_config() -> dict:
     """从环境变量读取配置"""
     manager_url = os.getenv("DDNS_MANAGER_URL")
     machine_token = os.getenv("DDNS_MACHINE_TOKEN")
-    interface_name = os.getenv("DDNS_INTERFACE_NAME")
+    interface_name = os.getenv("DDNS_INTERFACE_NAME", "auto")
     report_interval = int(os.getenv("DDNS_REPORT_INTERVAL", "60"))
 
-    if not manager_url or not machine_token or not interface_name:
+    if not manager_url or not machine_token:
         raise RuntimeError(
-            "Required environment variables: DDNS_MANAGER_URL, DDNS_MACHINE_TOKEN, DDNS_INTERFACE_NAME"
+            "Required environment variables: DDNS_MANAGER_URL, DDNS_MACHINE_TOKEN"
         )
 
     return {
@@ -36,27 +37,110 @@ def get_config() -> dict:
     }
 
 
-def get_public_ipv4() -> str | None:
-    """通过外部服务获取公网 IPv4 地址"""
-    services = [
-        "https://api.ipify.org",
-        "https://api4.ipify.org",
-        "https://ipv4.icanhazip.com",
-        "https://v4.ident.me",
-    ]
-    for service in services:
-        try:
-            resp = requests.get(service, timeout=5)
-            if resp.status_code == 200:
-                ip = resp.text.strip()
-                # 验证是有效的 IPv4
-                if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ip):
-                    logging.debug(f"Got IPv4 from {service}: {ip}")
-                    return ip
-        except Exception as e:
-            logging.debug(f"Failed to get IPv4 from {service}: {e}")
+def is_private_ipv4(ip: str) -> bool:
+    """判断 IPv4 是否为私有地址（局域网地址）"""
+    try:
+        addr = ipaddress.IPv4Address(ip)
+        return addr.is_private or addr.is_loopback or addr.is_link_local
+    except ipaddress.AddressValueError:
+        return True
+
+
+def is_private_ipv6(ip: str) -> bool:
+    """判断 IPv6 是否为私有地址"""
+    try:
+        addr = ipaddress.IPv6Address(ip)
+        # 排除链路本地、唯一本地地址等
+        return addr.is_private or addr.is_loopback or addr.is_link_local
+    except ipaddress.AddressValueError:
+        return True
+
+
+def get_all_interfaces() -> list[str]:
+    """获取所有网卡名称"""
+    try:
+        result = subprocess.run(
+            ["ip", "link", "show"],
+            capture_output=True,
+            text=True,
+        )
+        interfaces = []
+        for line in result.stdout.splitlines():
+            match = re.match(r'^\d+:\s+([^:@]+)', line)
+            if match:
+                iface = match.group(1).strip()
+                # 跳过 lo 和 docker/veth 等虚拟网卡
+                if iface != 'lo' and not iface.startswith(('veth', 'br-', 'docker')):
+                    interfaces.append(iface)
+        return interfaces
+    except Exception as e:
+        logging.error(f"Failed to get interfaces: {e}")
+        return []
+
+
+def get_ipv4_address(interface_name: str) -> str | None:
+    """从网卡获取 IPv4 地址"""
+    try:
+        result = subprocess.run(
+            ["ip", "-4", "addr", "show", "dev", interface_name],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+    except Exception as e:
+        logging.debug(f"Failed to get IPv4 from {interface_name}: {e}")
+        return None
+
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("inet"):
             continue
+        match = re.search(r"inet\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", line)
+        if match:
+            ip = match.group(1)
+            # 只返回公网 IP
+            if not is_private_ipv4(ip):
+                logging.debug(f"Got public IPv4 from {interface_name}: {ip}")
+                return ip
     return None
+
+
+def get_ipv6_address(interface_name: str) -> str | None:
+    """从网卡获取 IPv6 地址"""
+    try:
+        result = subprocess.run(
+            ["ip", "-6", "addr", "show", "dev", interface_name],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+    except Exception as e:
+        logging.debug(f"Failed to get IPv6 from {interface_name}: {e}")
+        return None
+
+    candidates = []
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("inet6"):
+            continue
+        match = re.search(r"inet6\s+([0-9a-fA-F:]+)/", line)
+        if not match:
+            continue
+        ip = match.group(1)
+        # 跳过私有地址
+        if is_private_ipv6(ip):
+            continue
+        # 优先选择全局地址
+        if "scope global" in line:
+            candidates.insert(0, ip)
+        else:
+            candidates.append(ip)
+    
+    if candidates:
+        logging.debug(f"Got public IPv6 from {interface_name}: {candidates[0]}")
+    return candidates[0] if candidates else None
 
 
 def check_interface_exists(interface_name: str) -> bool:
@@ -73,42 +157,30 @@ def check_interface_exists(interface_name: str) -> bool:
         return False
 
 
-def get_ipv6_address(interface_name: str) -> str | None:
-    """获取 IPv6 地址"""
-    try:
-        result = subprocess.run(
-            ["ip", "-6", "addr", "show", "dev", interface_name],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError:
-        return None
-    except Exception as e:
-        logging.error(f"Failed to get IPv6 address: {e}")
-        return None
-
-    candidates = []
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if not line.startswith("inet6"):
-            continue
-        match = re.search(r"inet6\s+([0-9a-fA-F:]+)/", line)
-        if not match:
-            continue
-        ip = match.group(1)
-        # 跳过链路本地地址
-        if ip.lower().startswith("fe80"):
-            continue
-        # 优先选择全局地址
-        if "scope global" in line:
-            candidates.insert(0, ip)
-        else:
-            candidates.append(ip)
+def auto_detect_ips() -> tuple[str | None, str | None]:
+    """自动检测所有网卡的公网 IP"""
+    interfaces = get_all_interfaces()
+    logging.debug(f"Found interfaces: {interfaces}")
     
-    if candidates:
-        logging.debug(f"Got IPv6 from {interface_name}: {candidates[0]}")
-    return candidates[0] if candidates else None
+    ipv4 = None
+    ipv6 = None
+    
+    for iface in interfaces:
+        if not ipv4:
+            ipv4 = get_ipv4_address(iface)
+            if ipv4:
+                logging.debug(f"Found IPv4 on {iface}: {ipv4}")
+        
+        if not ipv6:
+            ipv6 = get_ipv6_address(iface)
+            if ipv6:
+                logging.debug(f"Found IPv6 on {iface}: {ipv6}")
+        
+        # 都找到了就停止
+        if ipv4 and ipv6:
+            break
+    
+    return ipv4, ipv6
 
 
 def report(manager_url: str, token: str, ipv4: str | None, ipv6: str | None, interval: int) -> None:
@@ -119,9 +191,6 @@ def report(manager_url: str, token: str, ipv4: str | None, ipv6: str | None, int
         payload["ipv4"] = ipv4
     if ipv6:
         payload["ipv6"] = ipv6
-    
-    if not ipv4 and not ipv6:
-        raise RuntimeError("No IP address to report")
     
     resp = requests.post(url, json=payload, timeout=10)
     if resp.status_code != 200:
@@ -134,27 +203,29 @@ def main() -> None:
     config = get_config()
     interval = config["report_interval"]
     backoff = 5
+    auto_mode = config["interface_name"].lower() == "auto"
 
-    # 检查网卡是否存在
-    if not check_interface_exists(config["interface_name"]):
+    # 非 auto 模式检查网卡是否存在
+    if not auto_mode and not check_interface_exists(config["interface_name"]):
         raise RuntimeError(f"Interface '{config['interface_name']}' does not exist")
 
     logging.info(f"DDNS Reporter started")
     logging.info(f"Manager: {config['manager_url']}")
-    logging.info(f"Interface: {config['interface_name']}")
+    mode_str = "auto-detect" if auto_mode else f"interface {config['interface_name']}"
+    logging.info(f"Mode: {mode_str}")
     logging.info(f"Interval: {interval}s")
 
     while True:
         try:
-            ipv4 = get_public_ipv4()
-            ipv6 = get_ipv6_address(config["interface_name"])
+            if auto_mode:
+                # 自动检测模式
+                ipv4, ipv6 = auto_detect_ips()
+            else:
+                # 指定网卡模式
+                ipv4 = get_ipv4_address(config["interface_name"])
+                ipv6 = get_ipv6_address(config["interface_name"])
             
-            if not ipv4 and not ipv6:
-                logging.warning("No IP address found, retrying...")
-                time.sleep(backoff)
-                backoff = min(backoff * 2, 300)
-                continue
-            
+            # 上报（允许只上报其中一个，或都为空）
             report(config["manager_url"], config["machine_token"], ipv4, ipv6, interval)
             
             ips = []
@@ -162,7 +233,10 @@ def main() -> None:
                 ips.append(f"IPv4: {ipv4}")
             if ipv6:
                 ips.append(f"IPv6: {ipv6}")
-            logging.info(f"Reported: {', '.join(ips)}")
+            if ips:
+                logging.info(f"Reported: {', '.join(ips)}")
+            else:
+                logging.warning("Reported: No public IP found")
             
             backoff = 5
             time.sleep(interval)
