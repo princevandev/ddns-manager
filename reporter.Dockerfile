@@ -1,10 +1,11 @@
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
 WORKDIR /app
 
 # 安装 iproute2 提供 ip 命令
-RUN apt-get update && apt-get install -y --no-install-recommends iproute2 && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache iproute2
 
+# 只安装必要的依赖
 RUN pip install --no-cache-dir requests
 
 COPY reporter.py .
